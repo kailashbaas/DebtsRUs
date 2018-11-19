@@ -1,4 +1,4 @@
-public class SavingsAccount
+public class CheckingAccount extends Account
 {
     public int getAccountid() {
         return accountid;

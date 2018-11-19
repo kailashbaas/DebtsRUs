@@ -1,4 +1,4 @@
-public class PocketAccount implements Account
+public class PocketAccount extends Account
 {
     private Account linked_account;
 

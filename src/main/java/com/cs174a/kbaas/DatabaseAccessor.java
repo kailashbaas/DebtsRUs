@@ -5,8 +5,8 @@ public class DatabaseAccessor
 {
     private static final String JDBC_DRIVER = "oracle.jdbc.driver.OracleDriver";
     private static final String DB_URL = "jdbc:oracle:thin@cloud-34-133.eci.ucsb.edu:1521:XE";
-    private static final String USERNAME = "@cloud-34-133.eci.ucsb.edu";
-    private static final String PASSWORD = "";
+    private static final String USERNAME = "kailashbaas@cloud-34-133.eci.ucsb.edu";
+    private static final String PASSWORD = "6551261";
 
     public static ResultSet query_db(String query)
     {
