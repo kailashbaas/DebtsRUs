@@ -1,3 +1,5 @@
+package com.cs174a.kbaas;
+
 public class Customer
 {
     private int tax_id;

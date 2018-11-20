@@ -1,3 +1,5 @@
+package com.cs174a.kbaas;
+
 public abstract class Account
 {
     protected int accountid;
