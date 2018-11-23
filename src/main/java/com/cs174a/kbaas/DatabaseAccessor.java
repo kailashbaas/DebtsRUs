@@ -13,7 +13,7 @@ public class DatabaseAccessor
 
     // Account.linked_account and Account.primary_owner will be null for all
     // accounts, will require additional processing to set these fields
-    public static HashMap<Integer, Account> query_acct(String query)
+    public HashMap<Integer, Account> query_acct(String query)
     {
         Connection conn = null;
         Statement stmt = null;
@@ -79,7 +79,7 @@ public class DatabaseAccessor
 
     // Check.src will be null for all checks, will require additional processing to set
     // tihs field
-    public static ArrayList<Check> query_check(String query)
+    public ArrayList<Check> query_check(String query)
     {
         Connection conn = null;
         Statement stmt = null;
@@ -140,7 +140,7 @@ public class DatabaseAccessor
         return checks;
     }
 
-    public static HashMap<Integer, Customer> query_customer(String query)
+    public HashMap<Integer, Customer> query_customer(String query)
     {
         Connection conn = null;
         Statement stmt = null;
@@ -202,7 +202,7 @@ public class DatabaseAccessor
 
     // Transaction.src and Transaction.dst will bu null for all transactions, will
     // require additional processing to set these fields
-    public static ArrayList<Transaction> query_transaction(String query)
+    public ArrayList<Transaction> query_transaction(String query)
     {
         Connection conn = null;
         Statement stmt = null;
@@ -261,37 +261,267 @@ public class DatabaseAccessor
         return transactions;
     }
 
-    public static void insert_acct(Account acct, ArrayList<Customer> owners)
+    public void insert_new_acct(Account acct, ArrayList<Customer> owners)
     {
-        return;
+        int accountid = acct.getAccountid();
+        insert_acct(acct);
+        for (int i = 0; i < owners.size(); i++)
+        {
+            insert_customer(owners.get(i), accountid);
+        }
     }
 
-    public static void insert_transaction(Transaction t, Customer initiatior)
+    private void insert_acct(Account acct)
     {
-        return;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "INSERT INTO Accounts(accountid, open, branch, interest_rate, interest_added, " +
+                "balance, avg_daily_balance, primary_owner, type, linked_account " +
+                "VALUES(?,?,?,?,?,?,?,?,?,?)";
+
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, acct.getAccountid());
+            pstmt.setBoolean(2, acct.isOpen());
+            pstmt.setString(3, acct.getBranch());
+            pstmt.setDouble(4, acct.getInterest_rate());
+            pstmt.setBoolean(5, acct.getInterest_added());
+            pstmt.setDouble(6, acct.getBalance());
+            pstmt.setDouble(7, acct.getAvg_daily_balance());
+            pstmt.setInt(8, acct.getPrimary_owner().getTaxId());
+            pstmt.setString(9, acct.getType());
+            if (acct.linked_acct == null)
+            {
+                pstmt.setObject(10, null);
+            }
+            else
+            {
+                pstmt.setObject(10, acct.getLinked_acct().getAccountid());
+            }
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
     }
 
-    public static void insert_check(Check c)
+    // This method inserts into both Customers and Owners, as each customer needs to own an account
+    // to be in the database
+    private void insert_customer(Customer c, int accountid)
     {
-        return;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String customers_sql = "INSERT INTO Customers(tax_id, pin, name, address) VALUES(?,?,?,?)";
+        String owners_sql =  "INSERT INTO Owners(accountid, tax_id) VALUES(?, ?)";
+
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(customers_sql);
+            pstmt.setObject(1, c.getTaxId());
+            pstmt.setObject(2, c.getPin());
+            pstmt.setObject(3, c.getName());
+            pstmt.setObject(4, c.getAddress());
+            pstmt.executeUpdate();
+            pstmt = conn.prepareStatement(owners_sql);
+            pstmt.setObject(1, accountid);
+            pstmt.setObject(2, c.getTaxId());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
     }
 
-    public static boolean update_acct(Account acct)
+    public void insert_transaction(Transaction t, int initiator_id)
+    {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String initiator_sql = "INSERT INTO Initiators(source, destination, datetime, tax_id) VALUES(?,?,?,?)";
+        String transaction_sql =  "INSERT INTO Owners(source, destination, datetime, type, money) VALUES(?,?,?,?,?)";
+
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(initiator_sql);
+            pstmt.setObject(1, t.getSrc().getAccountid());
+            pstmt.setObject(2, t.getDest().getAccountid());
+            pstmt.setObject(3, t.getDatetime());
+            pstmt.setObject(4, initiator_id);
+            pstmt.executeUpdate();
+            pstmt = conn.prepareStatement(transaction_sql);
+            pstmt.setObject(1, t.getSrc().getAccountid());
+            pstmt.setObject(2, t.getDest().getAccountid());
+            pstmt.setObject(3, t.getDatetime());
+            pstmt.setObject(4, t.getType());
+            pstmt.setObject(5, t.getMoney());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+    }
+
+    public void insert_check(Check c)
+    {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "INSERT INTO Checks(source, check_num, datetime, memo, money) VALUES(?,?,?,?,?)";
+
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, c.getSrc().getAccountid());
+            pstmt.setObject(2, c.getCheck_num());
+            pstmt.setObject(3, c.getDatetime());
+            pstmt.setObject(4, c.getMemo());
+            pstmt.setObject(5, c.getMoney());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+    }
+
+    public boolean update_acct(Account acct)
     {
         return false;
     }
 
-    public static boolean update_customer(Customer c)
+    public boolean update_customer(Customer c)
     {
         return false;
     }
 
-    public static boolean delete_acct(Account acct)
+    public boolean delete_acct(Account acct)
     {
         return false;
     }
 
-    public static boolean delete_customer(Customer c) {
+    public boolean delete_customer(Customer c) {
         return false;
     }
 }
