@@ -3,11 +3,11 @@ package com.cs174a.kbaas;
 public class Customer
 {
     private int tax_id;
-    private int pin;
+    private String pin;
     private String name;
     private String address;
 
-    public Customer(int tax_id, int pin, String name, String address)
+    public Customer(int tax_id, String pin, String name, String address)
     {
         this.tax_id = tax_id;
         this.pin = pin;
@@ -20,7 +20,7 @@ public class Customer
         return this.tax_id;
     }
 
-    public int getPin()
+    public String getPin()
     {
         return this.pin;
     }
@@ -40,7 +40,7 @@ public class Customer
         this.tax_id = new_id;
     }
 
-    public void setPin(int new_pin)
+    public void setPin(String new_pin)
     {
         this.pin = new_pin;
     }

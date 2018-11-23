@@ -2,8 +2,6 @@ package com.cs174a.kbaas;
 
 public class PocketAccount extends Account
 {
-    private Account linked_account;
-
     public int getAccountid() {
         return accountid;
     }
@@ -34,6 +32,16 @@ public class PocketAccount extends Account
 
     public void setInterest_rate(double interest_rate) {
         this.interest_rate = interest_rate;
+    }
+
+    public boolean getInterest_added()
+    {
+        return this.interest_added;
+    }
+
+    public void setInterest_added(boolean interest_added)
+    {
+        this.interest_added = interest_added;
     }
 
     public double getBalance() {
@@ -68,11 +76,11 @@ public class PocketAccount extends Account
         this.type = type;
     }
 
-    public Account getLinked_account() {
-        return linked_account;
+    public Account getLinked_acct() {
+        return linked_acct;
     }
 
-    public void setLinked_account(Account linked_account) {
-        this.linked_account = linked_account;
+    public void setLinked_acct(Account linked_acct) {
+        this.linked_acct = linked_acct;
     }
 }

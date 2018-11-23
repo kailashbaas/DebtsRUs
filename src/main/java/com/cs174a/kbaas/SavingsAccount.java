@@ -34,6 +34,15 @@ public class SavingsAccount extends Account
         this.interest_rate = interest_rate;
     }
 
+    public boolean getInterest_added()
+    {
+        return this.interest_added;
+    }
+
+    public void setInterest_added(boolean interest_added)
+    {
+        this.interest_added = interest_added;
+    }
     public double getBalance() {
         return balance;
     }
@@ -60,5 +69,13 @@ public class SavingsAccount extends Account
 
     public String getType() {
         return type;
+    }
+
+    public Account getLinked_acct() {
+        return linked_acct;
+    }
+
+    public void setLinked_acct(Account linked_acct) {
+        this.linked_acct = linked_acct;
     }
 }
