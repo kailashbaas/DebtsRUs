@@ -13,21 +13,27 @@ public class Test
     {
         Connection conn = null;
         Statement stmt = null;
+        PreparedStatement pstmt = null;
         ResultSet rs = null;
         String query = "SELECT cname FROM cs174.customers";
+        String insert = "INSERT INTO Test(attr) VALUES(?)";
 
         try
         {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
-            stmt = conn.createStatement();
+            //stmt = conn.createStatement();
+            Timestamp t = new Timestamp(System.currentTimeMillis());
+            pstmt = conn.prepareStatement(insert);
+            pstmt.setTimestamp(1, t);
+            pstmt.executeUpdate();
 
-            rs = stmt.executeQuery(query);
+            /*rs = stmt.executeQuery(query);
             while (rs.next())
             {
                 System.out.println(rs.getString("cname") + " | " +
                         rs.getString(1));
-            }
+            }*/
         }
         catch (SQLException se)
         {
