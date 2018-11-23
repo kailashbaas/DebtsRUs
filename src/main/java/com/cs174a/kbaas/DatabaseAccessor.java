@@ -2,6 +2,7 @@ package com.cs174a.kbaas;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class DatabaseAccessor
 {
@@ -10,12 +11,14 @@ public class DatabaseAccessor
     private static final String USERNAME = "";
     private static final String PASSWORD = "";
 
-    public static ArrayList<Account> query_acct(String query)
+    // Account.linked_account and Account.primary_owner will be null for all
+    // accounts, will require additional processing to set these fields
+    public static HashMap<Integer, Account> query_acct(String query)
     {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
-        ArrayList<Account> accts = null;
+        HashMap<Integer, Account> accts = new HashMap<Integer, Account>();
 
         try
         {
@@ -36,7 +39,7 @@ public class DatabaseAccessor
                 acct.avg_daily_balance = rs.getDouble("avg_daily_balance");
                 acct.type = rs.getString("type");
                 acct.linked_acct= null;
-
+                accts.put(acct.accountid, acct);
             }
         }
         catch (SQLException se)
@@ -74,11 +77,14 @@ public class DatabaseAccessor
         return accts;
     }
 
+    // Check.src will be null for all checks, will require additional processing to set
+    // tihs field
     public static ArrayList<Check> query_check(String query)
     {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
+        ArrayList<Check> checks = new ArrayList<Check>();
 
         try
         {
@@ -93,6 +99,10 @@ public class DatabaseAccessor
                 Check c = new Check();
                 c.setSrc(null);
                 c.setCheck_num(rs.getInt("check_num"));
+                c.setDatetime(rs.getTimestamp("datetime"));
+                c.setMoney(rs.getDouble("money"));
+                c.setMemo(rs.getString("memo"));
+                checks.add(c);
             }
         }
         catch (SQLException se)
@@ -127,13 +137,15 @@ public class DatabaseAccessor
                 se.printStackTrace();
             }
         }
-        return rs;
+        return checks;
     }
-    public static ArrayList<Customer> query_customer(String query)
+
+    public static HashMap<Integer, Customer> query_customer(String query)
     {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
+        HashMap<Integer, Customer> customers = new HashMap<Integer, Customer>();
 
         try
         {
@@ -145,11 +157,12 @@ public class DatabaseAccessor
 
             while (rs.next())
             {
-                Customer c = new Customer();
-                c.setAddress(rs.getString("address"));
-                c.setPin(rs.getString("pin"));
-                c.setName(rs.getString("name"));
-                c.setTaxId(rs.getInt("tax_id"));
+                String address = rs.getString("address");
+                String pin = rs.getString("pin");
+                String name = rs.getString("name");
+                int taxId = rs.getInt("tax_id");
+                Customer c = new Customer(taxId, pin, name, address);
+                customers.put(taxId, c);
             }
         }
         catch (SQLException se)
@@ -184,14 +197,17 @@ public class DatabaseAccessor
                 se.printStackTrace();
             }
         }
-        return rs;
+        return customers;
     }
 
+    // Transaction.src and Transaction.dst will bu null for all transactions, will
+    // require additional processing to set these fields
     public static ArrayList<Transaction> query_transaction(String query)
     {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
+        ArrayList<Transaction> transactions = null;
 
         try
         {
@@ -200,6 +216,15 @@ public class DatabaseAccessor
             stmt = conn.createStatement();
 
             rs = stmt.executeQuery(query);
+
+            while (rs.next())
+            {
+                Transaction t = new Transaction();
+                t.setDatetime(rs.getTimestamp("datetime"));
+                t.setMoney(rs.getDouble("money"));
+                t.setType(rs.getString("type"));
+                transactions.add(t);
+            }
         }
         catch (SQLException se)
         {
@@ -233,7 +258,7 @@ public class DatabaseAccessor
                 se.printStackTrace();
             }
         }
-        return rs;
+        return transactions;
     }
 
     public static void insert_acct(Account acct, ArrayList<Customer> owners)

@@ -1,13 +1,14 @@
 package com.cs174a.kbaas;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 public class Check
 {
     private Account src;
     private int check_num;
-    private LocalDateTime datetime;
+    private Timestamp datetime;
     private String memo;
+    private double money;
 
     public Account getSrc() {
         return src;
@@ -25,11 +26,11 @@ public class Check
         this.check_num = check_num;
     }
 
-    public LocalDateTime getDatetime() {
+    public Timestamp getDatetime() {
         return datetime;
     }
 
-    public void setDatetime(LocalDateTime datetime) {
+    public void setDatetime(Timestamp datetime) {
         this.datetime = datetime;
     }
 
@@ -48,6 +49,4 @@ public class Check
     public void setMoney(double money) {
         this.money = money;
     }
-
-    private double money;
 }

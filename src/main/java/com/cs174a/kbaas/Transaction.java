@@ -1,12 +1,12 @@
 package com.cs174a.kbaas;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 public class Transaction
 {
     private Account src;
     private Account dest;
-    private LocalDateTime datetime;
+    private Timestamp datetime;
     private String type;
     private double money;
 
@@ -26,11 +26,11 @@ public class Transaction
         this.dest = dest;
     }
 
-    public LocalDateTime getDatetime() {
+    public Timestamp getDatetime() {
         return datetime;
     }
 
-    public void setDatetime(LocalDateTime datetime) {
+    public void setDatetime(Timestamp datetime) {
         this.datetime = datetime;
     }
 

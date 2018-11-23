@@ -4,14 +4,25 @@ import java.sql.*;
 
 public class Test
 {
+    private static final String JDBC_DRIVER = "oracle.jdbc.driver.OracleDriver";
+    private static final String DB_URL = "jdbc:oracle:thin:@cloud-34-133.eci.ucsb.edu:1521:XE";
+    private static final String USERNAME = "";
+    private static final String PASSWORD = "";
+
     public static void main(String args[])
     {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
         String query = "SELECT cname FROM cs174.customers";
+
         try
         {
-            ResultSet rs = DatabaseAccessor.query_db(query);
-            System.out.println("here");
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            stmt = conn.createStatement();
 
+            rs = stmt.executeQuery(query);
             while (rs.next())
             {
                 System.out.println(rs.getString("cname") + " | " +
@@ -20,7 +31,35 @@ public class Test
         }
         catch (SQLException se)
         {
-            System.out.println(se.getMessage());
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (stmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
         }
 
         return;
