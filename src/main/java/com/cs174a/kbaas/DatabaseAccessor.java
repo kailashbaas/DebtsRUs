@@ -158,7 +158,7 @@ public class DatabaseAccessor
             while (rs.next())
             {
                 String address = rs.getString("address");
-                String pin = rs.getString("pin");
+                int pin = rs.getInt("pin");
                 String name = rs.getString("name");
                 int taxId = rs.getInt("tax_id");
                 Customer c = new Customer(taxId, pin, name, address);
@@ -508,20 +508,277 @@ public class DatabaseAccessor
 
     public boolean update_acct(Account acct)
     {
-        return false;
+        if ((acct.getBalance() < 0) || (acct.getAvg_daily_balance() < 0))
+        {
+            return false;
+        }
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "UPDATE Accounts SET open = ?, branch = ?, interest_rate = ?, " +
+                "interest_added = ?, balance = ?, avg_daily_balance = ?, " +
+                "primary_owner = ?, linked_account = ? WHERE accountid = ?";
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, acct.isOpen());
+            pstmt.setObject(2, acct.getBranch());
+            pstmt.setObject(3, acct.getInterest_rate());
+            pstmt.setObject(4, acct.getInterest_added());
+            pstmt.setObject(5, acct.getBalance());
+            pstmt.setObject(6, acct.getAvg_daily_balance());
+            pstmt.setObject(7, acct.getPrimary_owner().getTaxId());
+            if (acct.getLinked_acct() != null)
+            {
+                pstmt.setObject(8, acct.getLinked_acct().getAccountid());
+            }
+            else
+            {
+                pstmt.setObject(8, null);
+            }
+            pstmt.setObject(9, acct.getAccountid());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+        return true;
     }
 
     public boolean update_customer(Customer c)
     {
-        return false;
+        // TODO: change where pin is verified
+        if (!verifyPin(c.getPin()))
+        {
+            return false;
+        }
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "UPDATE Customers SET pin = ?, name = ?, address = ? WHERE tax_id = ?";
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, c.getPin());
+            pstmt.setObject(2, c.getName());
+            pstmt.setObject(3, c.getAddress());
+            pstmt.setObject(4, c.getTaxId());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+        return true;
+    }
+
+    private boolean verifyPin(int pin)
+    {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "SELECT pin FROM Customers WHERE tax_id = ?";
+        boolean valid_pin = false;
+
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, pin);
+
+            rs = pstmt.executeQuery();
+            while (rs.next())
+            {
+                valid_pin = (pin == rs.getInt("pin"));
+            }
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+        return valid_pin;
     }
 
     public boolean delete_acct(Account acct)
     {
-        return false;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "DELETE FROM Accounts WHERE accountid = ?";
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, acct.getAccountid());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+        return true;
     }
 
     public boolean delete_customer(Customer c) {
-        return false;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "DELETE FROM Customers WHERE tax_id = ?";
+        try
+        {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, c.getTaxId());
+            pstmt.executeUpdate();
+        }
+        catch (SQLException se)
+        {
+            se.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (pstmt != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+            }
+            try
+            {
+                if (conn != null)
+                {
+                    conn.close();
+                }
+            }
+            catch (SQLException se)
+            {
+                se.printStackTrace();
+            }
+        }
+        return true;
     }
 }
