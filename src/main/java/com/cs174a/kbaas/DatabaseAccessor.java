@@ -578,7 +578,7 @@ public class DatabaseAccessor
     public boolean update_customer(Customer c)
     {
         // TODO: change where pin is verified
-        if (!verifyPin(c.getPin()))
+        if (!verifyPin(c.getTaxId(), c.getPin()))
         {
             return false;
         }
@@ -631,7 +631,7 @@ public class DatabaseAccessor
         return true;
     }
 
-    private boolean verifyPin(int pin)
+    public boolean verifyPin(int tax_id, int pin)
     {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -644,7 +644,7 @@ public class DatabaseAccessor
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, pin);
+            pstmt.setObject(1, tax_id);
 
             rs = pstmt.executeQuery();
             while (rs.next())
