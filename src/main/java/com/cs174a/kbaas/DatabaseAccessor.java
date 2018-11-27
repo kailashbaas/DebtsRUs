@@ -140,12 +140,13 @@ public class DatabaseAccessor
         return checks;
     }
 
-    public HashMap<Integer, Customer> query_customer(String query)
+    public HashMap<Integer, Customer> query_customer(String query, String key)
     {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
         HashMap<Integer, Customer> customers = new HashMap<Integer, Customer>();
+        boolean tax_id_key = key.equals("tax_id");
 
         try
         {
@@ -155,14 +156,20 @@ public class DatabaseAccessor
 
             rs = stmt.executeQuery(query);
 
-            while (rs.next())
-            {
+            while (rs.next()) {
                 String address = rs.getString("address");
                 int pin = rs.getInt("pin");
                 String name = rs.getString("name");
                 int taxId = rs.getInt("tax_id");
                 Customer c = new Customer(taxId, pin, name, address);
-                customers.put(taxId, c);
+                if (tax_id_key)
+                {
+                    customers.put(taxId, c);
+                }
+                else
+                {
+                    customers.put(pin, c);
+                }
             }
         }
         catch (SQLException se)
@@ -578,7 +585,7 @@ public class DatabaseAccessor
     public boolean update_customer(Customer c)
     {
         // TODO: change where pin is verified
-        if (!verifyPin(c.getTaxId(), c.getPin()))
+        if (!verifyPin(c.getPin()))
         {
             return false;
         }
@@ -631,12 +638,12 @@ public class DatabaseAccessor
         return true;
     }
 
-    public boolean verifyPin(int tax_id, int pin)
+    public boolean verifyPin(int pin)
     {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        String sql = "SELECT pin FROM Customers WHERE tax_id = ?";
+        String sql = "SELECT pin FROM Customers WHERE pin = ?";
         boolean valid_pin = false;
 
         try
@@ -644,12 +651,12 @@ public class DatabaseAccessor
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, tax_id);
+            pstmt.setObject(1, pin);
 
             rs = pstmt.executeQuery();
-            while (rs.next())
+            if (rs.next())
             {
-                valid_pin = (pin == rs.getInt("pin"));
+                valid_pin = true;
             }
         }
         catch (SQLException se)
