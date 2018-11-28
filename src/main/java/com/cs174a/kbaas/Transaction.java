@@ -2,8 +2,7 @@ package com.cs174a.kbaas;
 
 import java.sql.Timestamp;
 
-public class Transaction
-{
+public class Transaction {
     private Account src;
     private Account dest;
     private Timestamp datetime;

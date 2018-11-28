@@ -4,17 +4,14 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class BankTellerGUI
-{
+public class BankTellerGUI {
     protected JFrame frame;
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
 
     }
 
-    public void initializeGUI()
-    {
+    public void initializeGUI() {
 
     }
 }

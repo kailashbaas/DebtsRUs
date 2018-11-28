@@ -7,8 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class ATMAppGUI
-{
+public class ATMAppGUI {
     private JFrame frame;
 
     private DatabaseAccessor db;
@@ -16,14 +15,12 @@ public class ATMAppGUI
     private Account acct;
     private Customer customer;
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         ATMAppGUI gui = new ATMAppGUI();
         gui.run_login();
     }
 
-    public void run_login()
-    {
+    public void run_login() {
         frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
@@ -40,23 +37,17 @@ public class ATMAppGUI
         JButton login_button = new JButton("Login");
         login_button.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                if (!validate_credentials(pin_entry.getPassword()))
-                {
+                if (!validate_credentials(pin_entry.getPassword())) {
                     // display error msg
                     JOptionPane.showMessageDialog(frame, "Please enter your PIN");
-                }
-                else
-                {
+                } else {
                     int hashed_pin = (new String(pin_entry.getPassword())).hashCode();
-                    if (1 == 1 || ATMAppGUI.this.db.verifyPin(hashed_pin))
-                    {
+                    if (1 == 1 || ATMAppGUI.this.db.verifyPin(hashed_pin)) {
                         //String query = "SELECT * FROM Customer WHERE pin = " + String.valueOf(hashed_pin);
                         //Customer c = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
                         ATMAppGUI.this.customer = new Customer(1, 1, "a", "b"); // remove this and uncomment after db setup
                         ATMAppGUI.this.run_atm_app();
-                    }
-                    else
-                    {
+                    } else {
                         JOptionPane.showMessageDialog(frame, "Incorrect PIN");
                     }
                 }
@@ -86,8 +77,7 @@ public class ATMAppGUI
         frame.setVisible(true);
     }
 
-    private void run_atm_app()
-    {
+    private void run_atm_app() {
         frame.getContentPane().removeAll();
         frame.repaint();
 
@@ -111,8 +101,7 @@ public class ATMAppGUI
         }
 
         accountids.clear();*/
-        for (int i = 0; i < 10; i++)
-        {
+        for (int i = 0; i < 10; i++) {
             accountids.add(i);
         }
         final JComboBox accountid_list = new JComboBox(accountids.toArray());
@@ -122,12 +111,9 @@ public class ATMAppGUI
             public void actionPerformed(ActionEvent actionEvent) {
                 Integer accountid = (Integer) accountid_list.getSelectedItem();
                 ATMAppGUI.this.acct = accounts.get(accountid);
-                if (1 == 1 || ATMAppGUI.this.acct.getType().equals("Pocket"))
-                {
+                if (1 == 1 || ATMAppGUI.this.acct.getType().equals("Pocket")) {
                     ATMAppGUI.this.run_pocket_app();
-                }
-                else
-                {
+                } else {
                     ATMAppGUI.this.run_main_app();
                 }
             }
@@ -149,14 +135,14 @@ public class ATMAppGUI
         frame.validate();
     }
 
-    private void run_main_app()
-    {
+    private void run_main_app() {
         frame.getContentPane().removeAll();
         frame.repaint();
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
+        // TODO: in button handlers, check that account is open
         String greeting = "Welcome, " + customer.getName();
         JLabel greeting_label = new JLabel(greeting);
         JButton deposit = new JButton("Deposit Money");
@@ -176,8 +162,7 @@ public class ATMAppGUI
         frame.validate();
     }
 
-    private void run_pocket_app()
-    {
+    private void run_pocket_app() {
         frame.getContentPane().removeAll();
         frame.repaint();
 
@@ -204,16 +189,12 @@ public class ATMAppGUI
 
     }
 
-    private boolean validate_credentials(char[] pin)
-    {
-        if (pin.length != 4)
-        {
+    private boolean validate_credentials(char[] pin) {
+        if (pin.length != 4) {
             return false;
         }
-        for (int i = 0; i < pin.length; i++)
-        {
-            if (!Character.isDigit(pin[i]))
-            {
+        for (int i = 0; i < pin.length; i++) {
+            if (!Character.isDigit(pin[i])) {
                 return false;
             }
         }
