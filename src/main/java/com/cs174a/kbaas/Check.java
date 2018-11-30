@@ -2,8 +2,7 @@ package com.cs174a.kbaas;
 
 import java.sql.Timestamp;
 
-public class Check
-{
+public class Check {
     private Account src;
     private int check_num;
     private Timestamp datetime;

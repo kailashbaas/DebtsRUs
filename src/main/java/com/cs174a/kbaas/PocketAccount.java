@@ -1,7 +1,11 @@
 package com.cs174a.kbaas;
 
-public class PocketAccount extends Account
-{
+public class PocketAccount extends Account {
+
+    public PocketAccount() {
+        this.interest_rate = 0;
+    }
+
     public int getAccountid() {
         return accountid;
     }
@@ -34,13 +38,11 @@ public class PocketAccount extends Account
         this.interest_rate = interest_rate;
     }
 
-    public boolean getInterest_added()
-    {
+    public boolean getInterest_added() {
         return this.interest_added;
     }
 
-    public void setInterest_added(boolean interest_added)
-    {
+    public void setInterest_added(boolean interest_added) {
         this.interest_added = interest_added;
     }
 
@@ -50,6 +52,10 @@ public class PocketAccount extends Account
 
     public void setBalance(double balance) {
         this.balance = balance;
+    }
+
+    public void deposit(double amount) {
+        this.balance += amount;
     }
 
     public double getAvg_daily_balance() {

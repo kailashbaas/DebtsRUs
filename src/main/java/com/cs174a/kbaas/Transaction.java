@@ -2,13 +2,13 @@ package com.cs174a.kbaas;
 
 import java.sql.Timestamp;
 
-public class Transaction
-{
+public class Transaction {
     private Account src;
     private Account dest;
     private Timestamp datetime;
     private String type;
     private double money;
+    private Customer initiator;
 
     public Account getSrc() {
         return src;
@@ -48,5 +48,13 @@ public class Transaction
 
     public void setMoney(double money) {
         this.money = money;
+    }
+
+    public Customer getInitiator() {
+        return initiator;
+    }
+
+    public void setInitiator(Customer initiator) {
+        this.initiator = initiator;
     }
 }
