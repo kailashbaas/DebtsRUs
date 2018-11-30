@@ -5,13 +5,12 @@ import java.awt.event.*;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 
+// TODO: check action listeners for 1 == 1 in if statement
 public class ATMAppGUI {
+
     private JFrame frame;
-
     private DatabaseAccessor db;
-
     private Account acct;
     private Customer customer;
 
@@ -92,15 +91,6 @@ public class ATMAppGUI {
         Account acct1 = new CheckingAccount();
         accounts.put(0, acct1);
 
-        /*Iterator it = accounts.entrySet().iterator();
-        while (it.hasNext())
-        {
-            HashMap.Entry pair = (HashMap.Entry)it.next();
-            Account acct = (Account) pair.getValue();
-            accountids.add(acct.getAccountid());
-        }
-
-        accountids.clear();*/
         for (int i = 0; i < 10; i++) {
             accountids.add(i);
         }
@@ -111,7 +101,7 @@ public class ATMAppGUI {
             public void actionPerformed(ActionEvent actionEvent) {
                 Integer accountid = (Integer) accountid_list.getSelectedItem();
                 ATMAppGUI.this.acct = accounts.get(accountid);
-                if (1 == 1 || ATMAppGUI.this.acct.getType().equals("Pocket")) {
+                if (1 != 1 && ATMAppGUI.this.acct.getType().equals("Pocket")) {
                     ATMAppGUI.this.run_pocket_app();
                 } else {
                     ATMAppGUI.this.run_main_app();
@@ -143,13 +133,24 @@ public class ATMAppGUI {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         // TODO: in button handlers, check that account is open
+        TransactionButtonListener listener = new TransactionButtonListener();
         String greeting = "Welcome, " + customer.getName();
         JLabel greeting_label = new JLabel(greeting);
-        JButton deposit = new JButton("Deposit Money");
-        JButton withdraw = new JButton("Withdraw Money");
-        JButton transfer = new JButton("Transfer Money");
-        JButton wire = new JButton("Wire Money");
+        JButton deposit = new JButton("Deposit");
+        deposit.addActionListener(listener);
+        JButton withdraw = new JButton("Withdraw");
+        withdraw.addActionListener(listener);
+        JButton transfer = new JButton("Transfer");
+        transfer.addActionListener(listener);
+        JButton wire = new JButton("Wire");
+        wire.addActionListener(listener);
         JButton back = new JButton("Back");
+        back.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                ATMAppGUI.this.run_atm_app();
+            }
+        });
 
         panel.add(greeting_label);
         panel.add(deposit);
@@ -171,11 +172,23 @@ public class ATMAppGUI {
 
         String greeting = "Welcome, " + customer.getName();
         JLabel greeting_label = new JLabel(greeting);
+
+        TransactionButtonListener listener = new TransactionButtonListener();
         JButton top_up = new JButton("Top-Up");
+        top_up.addActionListener(listener);
         JButton purchase = new JButton("Purchase");
+        purchase.addActionListener(listener);
         JButton collect = new JButton("Collect");
+        collect.addActionListener(listener);
         JButton pay_friend = new JButton("Pay-Friend");
+        pay_friend.addActionListener(listener);
         JButton back = new JButton("Back");
+        back.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                ATMAppGUI.this.run_atm_app();
+            }
+        });
 
         panel.add(greeting_label);
         panel.add(top_up);
@@ -189,6 +202,422 @@ public class ATMAppGUI {
 
     }
 
+    private void run_deposit_screen() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to deposit:");
+        final JTextField amount = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
+                    return;
+                }
+                double deposit_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.deposit(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your deposit");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 1;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridy = 1;
+        panel.add(amount, c);
+
+        c.gridy = 2;
+        panel.add(submit_button, c);
+
+        c.gridx = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.validate();
+    }
+
+    private void run_top_up_screen() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to add to this account:");
+        final JTextField amount = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
+                    return;
+                }
+                double deposit_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.top_up(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your top-up");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 1;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridy = 1;
+        panel.add(amount, c);
+
+        c.gridy = 2;
+        panel.add(submit_button, c);
+
+        c.gridx = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel);
+        frame.validate();
+    }
+
+    private void run_withdrawal_screen() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to withdraw:");
+        final JTextField amount = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
+                    return;
+                }
+                double withdrawal_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.withdraw(withdrawal_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your withdrawal");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 1;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridy = 1;
+        panel.add(amount, c);
+
+        c.gridy = 2;
+        panel.add(submit_button, c);
+
+        c.gridx = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel);
+        frame.validate();
+    }
+
+    private void run_purchase_screen() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to spend:");
+        final JTextField amount = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
+                    return;
+                }
+                double purchase_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.purchase(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your purchase");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 1;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridy = 1;
+        panel.add(amount, c);
+
+        c.gridy = 2;
+        panel.add(submit_button, c);
+
+        c.gridx = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel);
+        frame.validate();
+    }
+
+    private void run_transfer_screen() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to transfer:");
+        final JTextField amount = new JTextField(20);
+        JLabel dest_label = new JLabel("Please enter the accountid of the account you wish to transfer to:");
+        final JTextField  dest_account = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText()) || !dest_account.getText().matches("[0-9]+")) {
+                    return;
+                }
+                String sql = "SELECT * FROM Accounts WHERE accountid = " + dest_account.getText();
+                Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
+                double transfer_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.transfer(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your transfer");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridx = 1;
+        panel.add(amount, c);
+
+        c.gridx = 0;
+        c.gridy = 1;
+        panel.add(dest_label, c);
+
+        c.gridx = 1;
+        panel.add(dest_account, c);
+
+        c.gridy = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel);
+        frame.validate();
+    }
+
+    private void run_collect_screen() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to collect:");
+        final JTextField amount = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
+                    return;
+                }
+                double purchase_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.collect(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your collect");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 1;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridy = 1;
+        panel.add(amount, c);
+
+        c.gridy = 2;
+        panel.add(submit_button, c);
+
+        c.gridx = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel);
+        frame.validate();
+    }
+
+    private void run_wire() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to wire:");
+        final JTextField amount = new JTextField(20);
+        JLabel dest_label = new JLabel("Please enter the accountid of the account you wish to wire:");
+        final JTextField  dest_account = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText()) || !dest_account.getText().matches("[0-9]+")) {
+                    return;
+                }
+                String sql = "SELECT * FROM Accounts WHERE accountid = " + dest_account.getText();
+                Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
+                double transfer_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.wire(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your wire");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridx = 1;
+        panel.add(amount, c);
+
+        c.gridx = 0;
+        c.gridy = 1;
+        panel.add(dest_label, c);
+
+        c.gridx = 1;
+        panel.add(dest_account, c);
+
+        c.gridy = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.validate();
+    }
+
+    private void run_pay_friend() {
+        frame.getContentPane().removeAll();
+        frame.repaint();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel label = new JLabel("Please enter the amount you wish to pay you friend:");
+        final JTextField amount = new JTextField(20);
+        JLabel dest_label = new JLabel("Please enter the accountid of the pocket account you wish to pay:");
+        final JTextField  dest_account = new JTextField(20);
+        JButton submit_button = new JButton("Submit");
+        submit_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText()) || !dest_account.getText().matches("[0-9]+")) {
+                    return;
+                }
+                String sql = "SELECT * FROM Accounts WHERE accountid = " + dest_account.getText();
+                Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
+                double transfer_amount = Double.parseDouble(amount.getText());
+                TransactionHandler t = new TransactionHandler();
+                boolean result = t.pay_friend(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer);
+                if (!result) {
+                    JOptionPane.showMessageDialog(frame, "There was an error processing your pay-friend request");
+                }
+            }
+        });
+
+        JButton back_button = new JButton("Back");
+        TransactionBackButtonListener back_listener = new TransactionBackButtonListener();
+        back_button.addActionListener(back_listener);
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(label, c);
+
+        c.gridx = 1;
+        panel.add(amount, c);
+
+        c.gridx = 0;
+        c.gridy = 1;
+        panel.add(dest_label, c);
+
+        c.gridx = 1;
+        panel.add(dest_account, c);
+
+        c.gridy = 2;
+        panel.add(back_button, c);
+
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.validate();
+    }
+
     private boolean validate_credentials(char[] pin) {
         if (pin.length != 4) {
             return false;
@@ -199,5 +628,60 @@ public class ATMAppGUI {
             }
         }
         return true;
+    }
+
+    private boolean validate_amount(String amount) {
+        return amount.matches("[0-9]+(.[0-9]+)?");
+    }
+
+    private class TransactionButtonListener implements ActionListener {
+        public void actionPerformed(ActionEvent actionEvent) {
+            String transaction = actionEvent.getActionCommand();
+            switch (transaction) {
+                case "Deposit":
+                    ATMAppGUI.this.run_deposit_screen();
+                    break;
+
+                case "Top-Up":
+                    ATMAppGUI.this.run_top_up_screen();
+                    break;
+
+                case "Withdraw":
+                    ATMAppGUI.this.run_withdrawal_screen();
+                    break;
+
+                case "Purchase":
+                    ATMAppGUI.this.run_purchase_screen();
+                    break;
+
+                case "Transfer":
+                    ATMAppGUI.this.run_transfer_screen();
+                    break;
+
+                case "Collect":
+                    ATMAppGUI.this.run_collect_screen();
+                    break;
+
+                case "Wire":
+                    ATMAppGUI.this.run_wire();
+                    break;
+
+                case "Pay-Friend":
+                    ATMAppGUI.this.run_pay_friend();
+                    break;
+
+                default:
+                    System.out.println("Something is really wrong");
+                    break;
+
+            }
+        }
+    }
+
+    private class TransactionBackButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+            ATMAppGUI.this.run_main_app();
+        }
     }
 }

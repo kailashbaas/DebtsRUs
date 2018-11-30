@@ -8,6 +8,7 @@ public class Transaction {
     private Timestamp datetime;
     private String type;
     private double money;
+    private Customer initiator;
 
     public Account getSrc() {
         return src;
@@ -47,5 +48,13 @@ public class Transaction {
 
     public void setMoney(double money) {
         this.money = money;
+    }
+
+    public Customer getInitiator() {
+        return initiator;
+    }
+
+    public void setInitiator(Customer initiator) {
+        this.initiator = initiator;
     }
 }

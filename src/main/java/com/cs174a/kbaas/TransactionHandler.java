@@ -3,6 +3,7 @@ package com.cs174a.kbaas;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 
+// TODO: flat $5 fee on first transaction on a pocket account
 public class TransactionHandler {
 
     private DatabaseAccessor db;
@@ -25,7 +26,8 @@ public class TransactionHandler {
         t.setSrc(external_acct);
         t.setMoney(amount);
         t.setType("Deposit");
-        db.insert_transaction(t, initiator.getTaxId());
+        t.setInitiator(initiator);
+        db.insert_transaction(t);
 
         acct.deposit(amount);
 
@@ -33,7 +35,7 @@ public class TransactionHandler {
     }
 
     public boolean top_up(double amount, Account acct, Customer initiator) {
-        if (amount <= 0 || !acct.isOpen() || !acct.getType().equals("Pocket")) {
+        if (amount <= 0 || !acct.isOpen() || !acct.getType().equals("Pocket") || amount > acct.getLinked_acct().getBalance()) {
             return false;
         }
 
@@ -44,12 +46,15 @@ public class TransactionHandler {
         t.setDest(acct);
         t.setMoney(amount);
         t.setType("Top-Up");
-        db.insert_transaction(t, initiator.getTaxId());
+        t.setInitiator(initiator);
+        db.insert_transaction(t);
 
         acct.deposit(amount);
-        return db.update_acct(acct);
+        acct.getLinked_acct().deposit(-1 * amount);
+        return db.update_acct(acct) && db.update_acct(acct.getLinked_acct());
     }
 
+    // amount > 0
     public boolean withdraw(double amount, Account acct, Customer initiator) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.isOpen() || acct.getType().equals("Pocket")) {
             return false;
@@ -66,7 +71,8 @@ public class TransactionHandler {
         t.setDest(external_acct);
         t.setMoney(amount);
         t.setType("Withdrawal");
-        db.insert_transaction(t, initiator.getTaxId());
+        t.setInitiator(initiator);
+        db.insert_transaction(t);
 
         return db.update_acct(acct);
     }
@@ -87,7 +93,8 @@ public class TransactionHandler {
         t.setDest(external_acct);
         t.setMoney(amount);
         t.setType("Purchase");
-        db.insert_transaction(t, initiator.getTaxId());
+        t.setInitiator(initiator);
+        db.insert_transaction(t);
 
         return db.update_acct(acct);
     }
@@ -99,7 +106,7 @@ public class TransactionHandler {
         }
 
         boolean commonOwners = src.getPrimary_owner() == dest.getPrimary_owner();
-        boolean intermediate = false;
+        boolean src_owner = false, dest_owner = false;
 
         if (!commonOwners) {
             String customr_src_id = String.valueOf(initiator.getTaxId());
@@ -109,15 +116,19 @@ public class TransactionHandler {
             ArrayList<String> src_owners = db.query_owners(query);
 
             for (int i = 0; i < src_owners.size(); i++) {
-                if (src_id.equals(src_owners.get(i).substring(0, src_owners.indexOf("|")))
-                    || dest_id.equals(src_owners.get(i).substring(0, src_owners.indexOf("|")))) {
-                    if (!intermediate) {
-                        intermediate = true;
+                if (src_id.equals(src_owners.get(i).substring(0, src_owners.indexOf("|")))) {
+                    if (!src_owner) {
+                        src_owner = true;
                     }
-                    else {
-                        commonOwners = true;
-                        break;
+                }
+                else if (dest_id.equals(src_owners.get(i).substring(0, src_owners.indexOf("|")))) {
+                    if (!dest_owner) {
+                        dest_owner = true;
                     }
+                }
+                commonOwners = src_owner && dest_owner;
+                if (commonOwners) {
+                    break;
                 }
             }
         }
@@ -135,7 +146,8 @@ public class TransactionHandler {
             t.setDest(dest);
             t.setMoney(amount);
             t.setType("Transfer");
-            db.insert_transaction(t, initiator.getTaxId());
+            t.setInitiator(initiator);
+            db.insert_transaction(t);
 
             return db.update_acct(src) && db.update_acct(dest);
         }
@@ -160,7 +172,8 @@ public class TransactionHandler {
         t.setDest(acct.getLinked_acct());
         t.setMoney(amount);
         t.setType("Collect");
-        db.insert_transaction(t, initiator.getTaxId());
+        t.setInitiator(initiator);
+        db.insert_transaction(t);
         return db.update_acct(acct) && db.update_acct(acct.getLinked_acct());
     }
 
@@ -183,7 +196,8 @@ public class TransactionHandler {
         t.setDest(dest);
         t.setMoney(amount);
         t.setType("Pay-Friend");
-        db.insert_transaction(t, initiator.getTaxId());
+        t.setInitiator(initiator);
+        db.insert_transaction(t);
 
         return db.update_acct(src) && db.update_acct(dest);
     }
@@ -221,7 +235,8 @@ public class TransactionHandler {
             t.setDest(dest);
             t.setMoney(amount);
             t.setType("Wire");
-            db.insert_transaction(t, initiator.getTaxId());
+            t.setInitiator(initiator);
+            db.insert_transaction(t);
 
             return db.update_acct(src) && db.update_acct(dest);
         }
@@ -229,7 +244,7 @@ public class TransactionHandler {
         return false;
     }
 
-    public boolean write_check(double amount, Account acct, Customer c) {
+    public boolean write_check(double amount, Account acct, String memo) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.getType().equals("Checking")) {
             return false;
         }
@@ -240,13 +255,13 @@ public class TransactionHandler {
         }
 
         Timestamp current_time = new Timestamp(System.currentTimeMillis());
-        String check_num = String.valueOf(c.getTaxId()).concat(String.valueOf(current_time));
+        String check_num = String.valueOf(acct.getAccountid()).concat(String.valueOf(current_time));
         Check check = new Check();
         check.setSrc(acct);
         check.setCheck_num(Integer.parseInt(check_num));
         check.setMoney(amount);
         check.setDatetime(current_time);
-        check.setMemo(c.getName().concat("|"));
+        check.setMemo(memo);
 
         return db.insert_check(check);
     }
@@ -255,5 +270,9 @@ public class TransactionHandler {
         acct.deposit(acct.getBalance() * acct.getInterest_rate());
         acct.setInterest_added(true);
         return db.update_acct(acct);
+    }
+
+    public void generate_monthly_statement(Account acct) {
+
     }
 }

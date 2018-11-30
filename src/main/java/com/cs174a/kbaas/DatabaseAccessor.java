@@ -339,27 +339,21 @@ public class DatabaseAccessor {
         }
     }
 
-    public void insert_transaction(Transaction t, int initiator_id) {
+    public void insert_transaction(Transaction t) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String initiator_sql = "INSERT INTO Initiators(source, destination, datetime, tax_id) VALUES(?,?,?,?)";
-        String transaction_sql = "INSERT INTO Owners(source, destination, datetime, type, money) VALUES(?,?,?,?,?)";
+        String transaction_sql = "INSERT INTO Owners(source, destination, datetime, type, money, initiator) VALUES(?,?,?,?,?,?)";
 
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
-            pstmt = conn.prepareStatement(initiator_sql);
-            pstmt.setObject(1, t.getSrc().getAccountid());
-            pstmt.setObject(2, t.getDest().getAccountid());
-            pstmt.setObject(3, t.getDatetime());
-            pstmt.setObject(4, initiator_id);
-            pstmt.executeUpdate();
             pstmt = conn.prepareStatement(transaction_sql);
             pstmt.setObject(1, t.getSrc().getAccountid());
             pstmt.setObject(2, t.getDest().getAccountid());
             pstmt.setObject(3, t.getDatetime());
             pstmt.setObject(4, t.getType());
             pstmt.setObject(5, t.getMoney());
+            pstmt.setObject(6, t.getInitiator().getTaxId());
             pstmt.executeUpdate();
         } catch (SQLException se) {
             se.printStackTrace();
