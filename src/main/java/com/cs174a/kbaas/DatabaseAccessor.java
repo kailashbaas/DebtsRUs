@@ -242,9 +242,48 @@ public class DatabaseAccessor {
         return owners;
     }
 
+    public double aggregate_query(String query) {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        double result = -1;
+
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            stmt = conn.createStatement();
+
+            rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                result = rs.getDouble(1);
+            }
+        } catch (SQLException se) {
+            se.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (stmt != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+        return result;
+    }
+
     public void insert_new_acct(Account acct, ArrayList<Customer> owners) {
         int accountid = acct.getAccountid();
         insert_acct(acct);
+        // TODO: change insert_customer to insert_owner
         for (int i = 0; i < owners.size(); i++) {
             insert_customer(owners.get(i), accountid);
         }

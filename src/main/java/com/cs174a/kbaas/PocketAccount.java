@@ -1,6 +1,11 @@
 package com.cs174a.kbaas;
 
 public class PocketAccount extends Account {
+
+    public PocketAccount() {
+        this.interest_rate = 0;
+    }
+
     public int getAccountid() {
         return accountid;
     }

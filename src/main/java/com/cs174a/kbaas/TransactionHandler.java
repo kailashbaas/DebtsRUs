@@ -245,7 +245,7 @@ public class TransactionHandler {
     }
 
     public boolean write_check(double amount, Account acct, String memo) {
-        if (amount <= 0 || amount > acct.getBalance() || !acct.getType().equals("Checking")) {
+        if (amount <= 0 || amount > acct.getBalance() || !acct.getType().contains("Checking")) {
             return false;
         }
 
@@ -267,12 +267,16 @@ public class TransactionHandler {
     }
 
     public boolean accrue_interest(Account acct) {
-        acct.deposit(acct.getBalance() * acct.getInterest_rate());
+        acct.deposit(acct.getAvg_daily_balance() * acct.getInterest_rate() / 12);
         acct.setInterest_added(true);
         return db.update_acct(acct);
     }
 
     public void generate_monthly_statement(Account acct) {
 
+    }
+
+    public Account getExternal_acct() {
+        return external_acct;
     }
 }

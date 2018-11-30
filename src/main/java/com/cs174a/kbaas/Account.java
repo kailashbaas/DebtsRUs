@@ -37,7 +37,7 @@ public abstract class Account {
     public static Account instantiateAcct(String type) {
         Account a = null;
         if (type.contains("Checking")) {
-            a = new CheckingAccount();
+            a = new CheckingAccount(type);
         } else if (type.equals("Savings")) {
             a = new SavingsAccount();
         } else if (type.equals("Pocket")) {
@@ -47,7 +47,7 @@ public abstract class Account {
     }
 
     public static Account instantiateATMAcct() {
-        Account a = new CheckingAccount();
+        Account a = new CheckingAccount("Student");
         a.setOpen(true);
         a.setType("ATM");
         a.setAccountid(0);

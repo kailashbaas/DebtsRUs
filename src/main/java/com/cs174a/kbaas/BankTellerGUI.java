@@ -154,6 +154,7 @@ public class BankTellerGUI {
                     Account acct = db.query_acct(sql).get(accountid);
                     TransactionHandler t = new TransactionHandler();
                     t.write_check(amt, acct, memo_label.getText());
+                    run();
                 }
             }
         });
@@ -209,6 +210,7 @@ public class BankTellerGUI {
                     Account acct = db.query_acct(sql).get(accountid);
                     TransactionHandler t = new TransactionHandler();
                     t.generate_monthly_statement(acct);
+                    // TODO: display results in new window and send frame back to original
                 }
             }
         });
@@ -235,10 +237,19 @@ public class BankTellerGUI {
     }
 
     private void run_closed_accts_screen() {
-        frame.getContentPane().removeAll();
-        frame.repaint();
+        String sql = "SELECT * FROM Accounts WHERE open = false";
+        HashMap<Integer, Account> closed_accts = db.query_acct(sql);
 
-        frame.validate();
+        ArrayList<JLabel> acct_labels = new ArrayList<>();
+        Iterator it = closed_accts.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Account acct = (Account) pair.getValue();
+            String text = String.valueOf(acct.getAccountid());
+            acct_labels.add(new JLabel(text));
+        }
+
+        display_labels(acct_labels, "Closed Accounts");
     }
 
     private void run_dter_screen() {
@@ -273,10 +284,12 @@ public class BankTellerGUI {
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry) it.next();
                         Account acct = (Account) pair.getValue();
-                        String text = String.valueOf(acct.getAccountid()) + "," +
-                                acct.getType() + "," + acct.isOpen();
+                        String text = String.valueOf(acct.getAccountid()) + "\t" +
+                                acct.getType() + "\t" + acct.isOpen();
                         acct_labels.add(new JLabel(text));
                     }
+                    String heading = "Accountid\tType\tOpen";
+                    display_labels(acct_labels, heading);
                 }
             }
         });
@@ -303,18 +316,32 @@ public class BankTellerGUI {
     }
 
     private void run_add_interest_screen() {
-        frame.getContentPane().removeAll();
-        frame.repaint();
+        String sql = "SELECT * FROM Accounts WHERE open = true AND interest_added = false";
+        //generateAvgDailyBalance();
+        HashMap<Integer, Account> valid_accts = db.query_acct(sql);
+        if (valid_accts.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "No available accounts to add interest to");
+            return;
+        }
 
-        frame.validate();
+        ArrayList<Account> accts = new ArrayList<>();
+        Iterator it = valid_accts.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Account acct = (Account) pair.getValue();
+            accts.add(acct);
+        }
+
+        TransactionHandler t = new TransactionHandler();
+        for (int i = 0; i < accts.size(); i++) {
+            if (!t.accrue_interest(accts.get(i))) {
+                JOptionPane.showMessageDialog(frame, "There was error adding interest to account " + String.valueOf(accts.get(i).getAccountid()));
+                return;
+            }
+        }
+        JOptionPane.showMessageDialog(frame, "Interest was successfully added to all open accounts");
     }
 
-    private void run_create_acct_screen() {
-        frame.getContentPane().removeAll();
-        frame.repaint();
-
-        frame.validate();
-    }
 
     private void run_delete_closed_accts_screen() {
         frame.getContentPane().removeAll();
@@ -329,6 +356,7 @@ public class BankTellerGUI {
 
         frame.validate();
     }
+
 
     private class ButtonHandler implements ActionListener {
         @Override
@@ -361,7 +389,8 @@ public class BankTellerGUI {
                     break;
 
                 case "Create Account":
-                    BankTellerGUI.this.run_create_acct_screen();
+                    AccountCreationGUI accountCreationGUI = new AccountCreationGUI();
+                    accountCreationGUI.run_create_acct_screen(time);
                     break;
 
                 case "Delete Closed Accounts and Customers":
@@ -387,7 +416,22 @@ public class BankTellerGUI {
         return acctid.matches("[0-9]+");
     }
 
-    private void display_labels(ArrayList<JLabel> labels) {
-        
+    private void display_labels(ArrayList<JLabel> labels, String heading) {
+        JFrame label_frame = new JFrame();
+        label_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        JPanel label_panel = new JPanel();
+        label_panel.setLayout(new BoxLayout(label_panel, BoxLayout.Y_AXIS));
+
+        JLabel heading_label = new JLabel(heading);
+        label_panel.add(heading_label);
+
+        for (int i = 0; i < labels.size(); i++) {
+            label_panel.add(labels.get(i));
+        }
+
+        label_frame.getContentPane().add(label_panel);
+        label_frame.setSize(400, 400);
+        label_frame.setVisible(true);
     }
 }

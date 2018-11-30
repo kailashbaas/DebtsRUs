@@ -1,6 +1,15 @@
 package com.cs174a.kbaas;
 
 public class CheckingAccount extends Account {
+
+    public CheckingAccount(String type) {
+        if (type.equals("Interest-Checking")) {
+            this.interest_rate = .055;
+        }
+        else {
+            this.interest_rate = 0;
+        }
+    }
     public int getAccountid() {
         return accountid;
     }

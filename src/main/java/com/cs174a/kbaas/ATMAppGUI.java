@@ -88,7 +88,7 @@ public class ATMAppGUI {
         ArrayList<Integer> accountids = new ArrayList<Integer>();
         String query = "SELECT * FROM Accounts NATURAL JOIN Owners WHERE ownerid = " + String.valueOf(customer.getTaxId());
         final HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();//db.query_acct(query);
-        Account acct1 = new CheckingAccount();
+        Account acct1 = new CheckingAccount("Student");
         accounts.put(0, acct1);
 
         for (int i = 0; i < 10; i++) {
