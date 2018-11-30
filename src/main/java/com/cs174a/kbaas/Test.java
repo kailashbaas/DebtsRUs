@@ -6,8 +6,8 @@ public class Test
 {
     private static final String JDBC_DRIVER = "oracle.jdbc.driver.OracleDriver";
     private static final String DB_URL = "jdbc:oracle:thin:@cloud-34-133.eci.ucsb.edu:1521:XE";
-    private static final String USERNAME = "";
-    private static final String PASSWORD = "";
+    private static final String USERNAME = "kailashbaas";
+    private static final String PASSWORD = "6551261";
 
     public static void main(String args[])
     {
@@ -15,25 +15,24 @@ public class Test
         Statement stmt = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        String query = "SELECT cname FROM cs174.customers";
-        String insert = "INSERT INTO Test(attr) VALUES(?)";
+        String query = "SELECT cname FROM cs174.customers WHERE cname='k'";
 
         try
         {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
-            //stmt = conn.createStatement();
-            Timestamp t = new Timestamp(System.currentTimeMillis());
-            pstmt = conn.prepareStatement(insert);
-            pstmt.setTimestamp(1, t);
-            pstmt.executeUpdate();
+            stmt = conn.createStatement();
+            //Timestamp t = new Timestamp(System.currentTimeMillis());
+            //pstmt = conn.prepareStatement(insert);
+            //pstmt.setTimestamp(1, t);
+            //pstmt.executeUpdate();
 
-            /*rs = stmt.executeQuery(query);
+            rs = stmt.executeQuery(query);
             while (rs.next())
             {
-                System.out.println(rs.getString("cname") + " | " +
-                        rs.getString(1));
-            }*/
+                System.out.println("in for loop");
+                System.out.println(rs.getString("cname"));
+            }
         }
         catch (SQLException se)
         {
