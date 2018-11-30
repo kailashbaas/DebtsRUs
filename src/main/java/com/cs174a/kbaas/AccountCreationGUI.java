@@ -172,12 +172,12 @@ public class AccountCreationGUI {
 
         String tax_id_sql = "SELECT MAX(tax_id) FROM Customers";
         double tax_id = db.aggregate_query(tax_id_sql) + 1;
-        /*JPanel branch_panel = new JPanel(new FlowLayout());
-        JLabel branch_label = new JLabel("Tax ID:");
-        JTextField branch = new JTextField(20);
-        branch_panel.add(branch_label);
-        branch_panel.add(branch);
-        panel.add(branch_panel);*/
+        /*JPanel tax_id_panel = new JPanel(new FlowLayout());
+        JLabel tax_id_label = new JLabel("Tax ID:");
+        JTextField tax_id = new JTextField(20);
+        tax_id_panel.add(tax_id_label);
+        tax_id_panel.add(tax_id);
+        panel.add(tax_id_panel);*/
 
         JPanel pin_panel = new JPanel(new FlowLayout());
         JLabel pin_label = new JLabel("PIN:");

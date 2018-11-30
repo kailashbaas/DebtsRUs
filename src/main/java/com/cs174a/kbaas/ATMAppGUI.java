@@ -209,7 +209,7 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to deposit:");
+        JLabel label = new JLabel("Deposit Amount:");
         final JTextField amount = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -258,7 +258,7 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to add to this account:");
+        JLabel label = new JLabel("Top-Up Amount:");
         final JTextField amount = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -307,7 +307,7 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to withdraw:");
+        JLabel label = new JLabel("Withdrawal Amount:");
         final JTextField amount = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -356,7 +356,7 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to spend:");
+        JLabel label = new JLabel("Spend Amount");
         final JTextField amount = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -405,9 +405,9 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to transfer:");
+        JLabel label = new JLabel("Transfer Amount:");
         final JTextField amount = new JTextField(20);
-        JLabel dest_label = new JLabel("Please enter the accountid of the account you wish to transfer to:");
+        JLabel dest_label = new JLabel("Destination Accountid:");
         final JTextField  dest_account = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -462,7 +462,7 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to collect:");
+        JLabel label = new JLabel("Collect Amount:");
         final JTextField amount = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -511,9 +511,9 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to wire:");
+        JLabel label = new JLabel("Wire Amount:");
         final JTextField amount = new JTextField(20);
-        JLabel dest_label = new JLabel("Please enter the accountid of the account you wish to wire:");
+        JLabel dest_label = new JLabel("Destination Accountid:");
         final JTextField  dest_account = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {
@@ -568,9 +568,9 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
-        JLabel label = new JLabel("Please enter the amount you wish to pay you friend:");
+        JLabel label = new JLabel("Amount:");
         final JTextField amount = new JTextField(20);
-        JLabel dest_label = new JLabel("Please enter the accountid of the pocket account you wish to pay:");
+        JLabel dest_label = new JLabel("Destination Accountid:");
         final JTextField  dest_account = new JTextField(20);
         JButton submit_button = new JButton("Submit");
         submit_button.addActionListener(new ActionListener() {

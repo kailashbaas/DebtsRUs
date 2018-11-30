@@ -5,8 +5,8 @@ import java.sql.*;
 public class Test {
     private static final String JDBC_DRIVER = "oracle.jdbc.driver.OracleDriver";
     private static final String DB_URL = "jdbc:oracle:thin:@cloud-34-133.eci.ucsb.edu:1521:XE";
-    private static final String USERNAME = "kailashbaas";
-    private static final String PASSWORD = "6551261";
+    private static final String USERNAME = "";
+    private static final String PASSWORD = "";
 
     public static void main(String args[]) {
         Connection conn = null;
@@ -33,10 +33,6 @@ public class Test {
         }
         catch (SQLException se)
         {
-                System.out.println(rs.getString("cname") + " | " +
-                        rs.getString(1));
-            }
-        } catch (SQLException se) {
             se.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
