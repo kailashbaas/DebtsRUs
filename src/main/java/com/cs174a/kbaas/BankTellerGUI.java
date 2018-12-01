@@ -344,10 +344,19 @@ public class BankTellerGUI {
 
 
     private void run_delete_closed_accts_screen() {
-        frame.getContentPane().removeAll();
-        frame.repaint();
+        String accts_sql = "SELECT * FROM Accounts WHERE open = false";
+        HashMap<Integer, Account> closed_accts = db.query_acct(accts_sql);
 
-        frame.validate();
+        ArrayList<JLabel> deleted_accts = new ArrayList<>();
+
+        Iterator it = closed_accts.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Account acct = (Account) pair.getValue();
+            deleted_accts.add(new JLabel(String.valueOf(acct.getAccountid())));
+            db.delete_acct(acct);
+        }
+        display_labels(deleted_accts, "The following accounts were deleted:");
     }
 
     private void run_delete_transactions_screen() {
