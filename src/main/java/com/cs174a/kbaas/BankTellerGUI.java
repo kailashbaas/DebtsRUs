@@ -197,17 +197,17 @@ public class BankTellerGUI {
 
         JLabel title = new JLabel("Generate Monthly Statement");
 
-        JLabel select_acct_label = new JLabel("Accountid: ");
-        final JTextField acct_entry = new JTextField(20);
+        JLabel select_customer_label = new JLabel("Customer tax_id: ");
+        final JTextField customer_entry = new JTextField(20);
 
         JButton generate = new JButton("Generate");
         generate.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 if (validate_acct(acct_entry.getText())) {
-                    int accountid = Integer.parseInt(acct_entry.getText());
-                    String sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(accountid);
-                    Account acct = db.query_acct(sql).get(accountid);
+                    int tax_id = Integer.parseInt(customer_entry.getText());
+                    String sql = "SELECT * FROM Owners WHERE tax_id = " + String.valueOf(tax_id);
+                    ArrayList<String> accts = db.query_owners(sql);
                     TransactionHandler t = new TransactionHandler();
                     t.generate_monthly_statement(acct);
                     // TODO: display results in new window and send frame back to original
@@ -360,10 +360,8 @@ public class BankTellerGUI {
     }
 
     private void run_delete_transactions_screen() {
-        frame.getContentPane().removeAll();
-        frame.repaint();
-
-        frame.validate();
+        db.delete_transactions();
+        JOptionPane.showMessageDialog(frame, "Deleted all transactions from the database");
     }
 
 

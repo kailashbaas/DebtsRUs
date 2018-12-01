@@ -644,4 +644,36 @@ public class DatabaseAccessor {
         }
         return true;
     }
+
+    // this method deletes all transactions from the database
+    public void delete_transactions() {
+        Connection conn = null;
+        Statement stmt = null;
+        String sql = "DELETE FROM Transactions T";
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            stmt = conn.createStatement();
+
+            stmt.executeUpdate(sql);
+        } catch (SQLException se) {
+            se.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (stmt != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+    }
 }
