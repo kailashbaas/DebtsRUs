@@ -76,7 +76,9 @@ public class DatabaseAccessor {
 
             while (rs.next()) {
                 Check c = new Check();
-                c.setSrc(null);
+                String src_sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(rs.getInt("source"));
+                HashMap<Integer, Account> src = this.query_acct(src_sql);
+                c.setSrc(src.get(rs.getInt("source")));
                 c.setCheck_num(rs.getInt("check_num"));
                 c.setDatetime(rs.getTimestamp("datetime"));
                 c.setMoney(rs.getDouble("money"));
@@ -153,8 +155,6 @@ public class DatabaseAccessor {
         return customers;
     }
 
-    // Transaction.src and Transaction.dst will be null for all transactions, will
-    // require additional processing to set these fields
     public ArrayList<Transaction> query_transaction(String query) {
         Connection conn = null;
         Statement stmt = null;
@@ -170,6 +170,12 @@ public class DatabaseAccessor {
 
             while (rs.next()) {
                 Transaction t = new Transaction();
+                String src_sql = "SELECT * FROM Accounts WHERE accountid = " + rs.getInt("source");
+                HashMap<Integer, Account> src = this.query_acct(src_sql);
+                t.setSrc(src.get(rs.getInt("source")));
+                String dest_sql = "SELECT * FROM Accounts WHERE accountid = " + rs.getInt("destination");
+                HashMap<Integer, Account> dest = this.query_acct(dest_sql);
+                t.setDest(src.get(rs.getInt("destination")));
                 t.setDatetime(rs.getTimestamp("datetime"));
                 t.setMoney(rs.getDouble("money"));
                 t.setType(rs.getString("type"));

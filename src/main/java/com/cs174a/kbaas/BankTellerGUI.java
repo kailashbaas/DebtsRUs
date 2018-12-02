@@ -154,8 +154,11 @@ public class BankTellerGUI {
                     Account acct = db.query_acct(sql).get(accountid);
                     TransactionHandler t = new TransactionHandler();
                     t.write_check(amt, acct, memo_label.getText());
-                    run();
                 }
+                else {
+                    JOptionPane.showMessageDialog(frame, "Invalid accountid or amount");
+                }
+                run();
             }
         });
 
@@ -204,14 +207,101 @@ public class BankTellerGUI {
         generate.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                if (validate_acct(acct_entry.getText())) {
+                if (validate_tax_id(customer_entry.getText())) {
                     int tax_id = Integer.parseInt(customer_entry.getText());
-                    String sql = "SELECT * FROM Owners WHERE tax_id = " + String.valueOf(tax_id);
-                    ArrayList<String> accts = db.query_owners(sql);
-                    TransactionHandler t = new TransactionHandler();
-                    t.generate_monthly_statement(acct);
-                    // TODO: display results in new window and send frame back to original
+                    String sql = "SELECT * FROM Accounts WHERE primary_owner = " + String.valueOf(tax_id);
+                    HashMap<Integer, Account> accts = db.query_acct(sql);
+                    Iterator it = accts.entrySet().iterator();
+                    if (accts.size() > 0) {
+                        ArrayList<JLabel> labels = new ArrayList<>();
+                        double total_balance = 0;
+                        while (it.hasNext()) {
+                            Map.Entry pair = (Map.Entry) it.next();
+                            Account acct = (Account) pair.getValue();
+                            String acctid = String.valueOf(acct.getAccountid());
+
+                            double transaction_total = 0;
+                            Timestamp last_month = new Timestamp(time.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+                            String owners_sql = "SELECT * FROM Customers C JOIN Owners O ON C.tax_id = O.ownerid";
+                            String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_DATE('" + last_month.toString()
+                                    + "', YYYY-MM-DD hh:mm:ss.fffffffff) AND (source = " + acctid + "OR destination = " + acctid + ")";
+                            String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid;
+
+                            HashMap<Integer, Customer> owners = db.query_customer(owners_sql, "tax_id");
+                            ArrayList<Transaction> transactions = db.query_transaction(transactions_sql);
+                            ArrayList<Check> checks = db.query_check(checks_sql);
+
+                            JLabel acct_label = new JLabel("Account " + acctid);
+                            labels.add(acct_label);
+
+                            JLabel owners_label = new JLabel("\tOwners");
+                            labels.add(owners_label);
+                            JLabel owners_heading = new JLabel("\t\tName\t\tAddress");
+                            labels.add(owners_heading);
+                            Iterator owner_it = owners.entrySet().iterator();
+                            while (owner_it.hasNext()) {
+                                Map.Entry owner_pair = (Map.Entry) owner_it.next();
+                                Customer c = (Customer) owner_pair.getValue();
+                                String label_content = "\t\t" + c.getName() + "\t\t" + c.getAddress();
+                                labels.add(new JLabel(label_content));
+                            }
+
+                            JLabel transactions_label = new JLabel("\tTransactions");
+                            labels.add(transactions_label);
+                            JLabel transactions_heading = new JLabel("\t\tSource\t\tDestination\t\tType\t\tMoney\t\tDatetime\t\tInitiator");
+                            labels.add(transactions_heading);
+                            for (int j = 0; j < transactions.size(); j++) {
+                                Transaction t = transactions.get(j);
+                                if (String.valueOf(t.getSrc().getAccountid()).equals(String.valueOf(acct.getAccountid()))) {
+                                    transaction_total -= t.getMoney();
+                                }
+                                else {
+                                    transaction_total += t.getMoney();
+                                }
+                                String label_content = "\t\t" + String.valueOf(t.getSrc().getAccountid()) +
+                                        "\t\t" + String.valueOf(t.getDest().getAccountid()) +
+                                        "\t\t" + t.getType() +
+                                        "\t\t" + String.valueOf(t.getMoney()) +
+                                        "\t\t" + t.getDatetime().toString() +
+                                        "\t\t" + t.getInitiator().getName();
+                                labels.add(new JLabel(label_content));
+                            }
+
+                            JLabel checks_label = new JLabel("\tChecks");
+                            labels.add(checks_label);
+                            JLabel checks_heading = new JLabel("\t\tSource\t\tCheck No.\t\tMoney\t\tMemo\t\tDatetime");
+                            labels.add(checks_heading);
+                            for (int j = 0; j < checks.size(); j++) {
+                                Check c = checks.get(j);
+                                transaction_total -= c.getMoney();
+                                String label_content = "\t\t" + String.valueOf(c.getSrc().getAccountid()) +
+                                        "\t\t" + String.valueOf(c.getCheck_num()) +
+                                        "\t\t" + String.valueOf(c.getMoney()) +
+                                        "\t\t" + c.getMemo() +
+                                        "\t\t" + c.getDatetime().toString();
+                                labels.add(new JLabel(label_content));
+                            }
+
+                            JLabel initial_balance = new JLabel("Initial Balance: " + String.valueOf(acct.getBalance() + transaction_total));
+                            labels.add(initial_balance);
+                            JLabel final_balance = new JLabel("Final Balance: " + String.valueOf(acct.getBalance()));
+                            labels.add(final_balance);
+                            total_balance += acct.getBalance();
+                        }
+                        if (total_balance > 100000) {
+                            String msg = "Your total balance across all accounts you are a primary owner of is " + String.valueOf(total_balance)
+                                    + ", which exceeds the insurance limit of 100000.";
+                            JLabel label = new JLabel(msg);
+                            labels.add(label);
+                        }
+                        display_labels(labels, "Monthly Statement");
+                    }
                 }
+                else {
+                    JOptionPane.showMessageDialog(frame, "Invalid tax_id");
+                }
+                run();
             }
         });
 
@@ -223,10 +313,10 @@ public class BankTellerGUI {
 
         c.gridx = 0;
         c.gridy = 1;
-        panel.add(select_acct_label, c);
+        panel.add(select_customer_label, c);
 
         c.gridx = 1;
-        panel.add(acct_entry, c);
+        panel.add(customer_entry, c);
 
         c.gridx = 1;
         c.gridy = 2;
@@ -253,10 +343,19 @@ public class BankTellerGUI {
     }
 
     private void run_dter_screen() {
-        frame.getContentPane().removeAll();
-        frame.repaint();
-
-        frame.validate();
+        String sql = "SELECT * FROM (Customers C JOIN Accounts A ON C.tax_id = A.primary_owner) JOIN Transactions T ON T.dest = A.accountid"
+                + "GROUP BY C.tax_id"
+                + "HAVING SUM(T.money) > 10000";
+        HashMap<Integer, Customer> dter_customers = db.query_customer(sql, "tax_id");
+        ArrayList<JLabel> labels = new ArrayList<>();
+        Iterator it = dter_customers.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Customer c = (Customer) pair.getValue();
+            String label_content = String.valueOf(c.getTaxId()) + "\t\t" + c.getName() + "\t\t" + c.getAddress();
+            labels.add(new JLabel(label_content));
+        }
+        display_labels(labels, "Tax ID\t\tName\t\tAddress");
     }
 
     private void run_customer_report_screen() {
@@ -291,6 +390,10 @@ public class BankTellerGUI {
                     String heading = "Accountid\tType\tOpen";
                     display_labels(acct_labels, heading);
                 }
+                else {
+                    JOptionPane.showMessageDialog(frame, "Invalid tax_id");
+                }
+                BankTellerGUI.this.run();
             }
         });
 
@@ -421,6 +524,10 @@ public class BankTellerGUI {
 
     private boolean validate_acct(String acctid) {
         return acctid.matches("[0-9]+");
+    }
+
+    private boolean validate_tax_id(String tax_id) {
+        return tax_id.matches("[0-9]+");
     }
 
     private void display_labels(ArrayList<JLabel> labels, String heading) {
