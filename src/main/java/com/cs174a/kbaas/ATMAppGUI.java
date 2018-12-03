@@ -13,6 +13,7 @@ public class ATMAppGUI {
     private DatabaseAccessor db;
     private Account acct;
     private Customer customer;
+    private CurrentTimeWrapper time;
 
     public static void main(String[] args) {
         ATMAppGUI gui = new ATMAppGUI();
@@ -23,6 +24,7 @@ public class ATMAppGUI {
         frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
+        time = new CurrentTimeWrapper();
 
         JLabel title = new JLabel("DebtsRUs ATM App Login", SwingConstants.CENTER);
 
@@ -226,7 +228,7 @@ public class ATMAppGUI {
                 }
                 double deposit_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.deposit(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                boolean result = t.deposit(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your deposit");
                 }
@@ -275,7 +277,7 @@ public class ATMAppGUI {
                 }
                 double deposit_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.top_up(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                boolean result = t.top_up(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your top-up");
                 }
@@ -324,7 +326,7 @@ public class ATMAppGUI {
                 }
                 double withdrawal_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.withdraw(withdrawal_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                boolean result = t.withdraw(withdrawal_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your withdrawal");
                 }
@@ -373,7 +375,7 @@ public class ATMAppGUI {
                 }
                 double purchase_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.purchase(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                boolean result = t.purchase(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your purchase");
                 }
@@ -426,7 +428,7 @@ public class ATMAppGUI {
                 Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
                 double transfer_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.transfer(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer);
+                boolean result = t.transfer(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your transfer");
                 }
@@ -479,7 +481,7 @@ public class ATMAppGUI {
                 }
                 double purchase_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.collect(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer);
+                boolean result = t.collect(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your collect");
                 }
@@ -532,7 +534,7 @@ public class ATMAppGUI {
                 Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
                 double transfer_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.wire(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer);
+                boolean result = t.wire(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your wire");
                 }
@@ -589,7 +591,7 @@ public class ATMAppGUI {
                 Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
                 double transfer_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.pay_friend(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer);
+                boolean result = t.pay_friend(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, time.getCurrent_time());
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your pay-friend request");
                 }

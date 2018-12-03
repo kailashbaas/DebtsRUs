@@ -11,7 +11,7 @@ import javax.swing.*;
 public class BankTellerGUI {
     private JFrame frame;
     private DatabaseAccessor db;
-    private Timestamp time;
+    private CurrentTimeWrapper time;
 
     public static void main(String[] args) {
         BankTellerGUI gui = new BankTellerGUI();
@@ -19,7 +19,7 @@ public class BankTellerGUI {
     }
 
     public void run() {
-        time = new Timestamp(System.currentTimeMillis());
+        time = new CurrentTimeWrapper();
         frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
@@ -99,7 +99,7 @@ public class BankTellerGUI {
                         SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
                         try {
                             Date new_date = formatter.parse(date_entry.getText());
-                            time = new Timestamp(new_date.getTime());
+                            time.updateCurrent_time(new Timestamp(new_date.getTime()));
                             frame1.dispose();
                             date.setText(time.toString());
                             frame.validate();
@@ -162,7 +162,7 @@ public class BankTellerGUI {
                     String sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(accountid);
                     Account acct = db.query_acct(sql).get(accountid);
                     TransactionHandler t = new TransactionHandler();
-                    t.write_check(amt, acct, memo_label.getText());
+                    t.write_check(amt, acct, memo_label.getText(), time.getCurrent_time());
                 }
                 else {
                     JOptionPane.showMessageDialog(frame, "Invalid accountid or amount");
@@ -230,7 +230,7 @@ public class BankTellerGUI {
                             String acctid = String.valueOf(acct.getAccountid());
 
                             double transaction_total = 0;
-                            Timestamp last_month = new Timestamp(time.getTime() - (30 * 24 * 60 * 60 * 1000));
+                            Timestamp last_month = new Timestamp(time.getCurrent_time().getTime() - (30 * 24 * 60 * 60 * 1000));
 
                             String owners_sql = "SELECT * FROM Customers C JOIN Owners O ON C.tax_id = O.ownerid";
                             String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_DATE('" + last_month.toString()
@@ -445,7 +445,7 @@ public class BankTellerGUI {
 
         TransactionHandler t = new TransactionHandler();
         for (int i = 0; i < accts.size(); i++) {
-            if (!t.accrue_interest(accts.get(i), time)) {
+            if (!t.accrue_interest(accts.get(i), time.getCurrent_time())) {
                 JOptionPane.showMessageDialog(frame, "There was error adding interest to account " + String.valueOf(accts.get(i).getAccountid()));
                 return;
             }
@@ -561,7 +561,7 @@ public class BankTellerGUI {
 
                 case "Create Account":
                     AccountCreationGUI accountCreationGUI = new AccountCreationGUI();
-                    accountCreationGUI.run_create_acct_screen(time);
+                    accountCreationGUI.run_create_acct_screen(time.getCurrent_time());
                     break;
 
                 case "Delete Closed Accounts and Customers":

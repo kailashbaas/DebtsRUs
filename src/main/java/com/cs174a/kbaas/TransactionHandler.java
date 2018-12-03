@@ -1,5 +1,6 @@
 package com.cs174a.kbaas;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,12 +17,11 @@ public class TransactionHandler {
         this.external_acct = Account.instantiateATMAcct();
     }
 
-    public boolean deposit(double amount, Account acct, Customer initiator) {
+    public boolean deposit(double amount, Account acct, Customer initiator, Timestamp time) {
         if (amount <= 0 || !acct.isOpen() || acct.getType().equals("Pocket")) {
             return false;
         }
 
-        Timestamp time = new Timestamp(System.currentTimeMillis());
         Transaction t = new Transaction();
         t.setDatetime(time);
         t.setDest(acct);
@@ -36,12 +36,15 @@ public class TransactionHandler {
         return db.update_acct(acct);
     }
 
-    public boolean top_up(double amount, Account acct, Customer initiator) {
+    public boolean top_up(double amount, Account acct, Customer initiator, Timestamp time) {
         if (amount <= 0 || !acct.isOpen() || !acct.getType().equals("Pocket") || amount > acct.getLinked_acct().getBalance()) {
             return false;
         }
 
-        Timestamp time = new Timestamp(System.currentTimeMillis());
+        if (first_transaction(acct, time)) {
+            acct.deposit(-5);
+        }
+
         Transaction t = new Transaction();
         t.setDatetime(time);
         t.setSrc(acct.getLinked_acct());
@@ -57,7 +60,7 @@ public class TransactionHandler {
     }
 
     // amount > 0
-    public boolean withdraw(double amount, Account acct, Customer initiator) {
+    public boolean withdraw(double amount, Account acct, Customer initiator, Timestamp time) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.isOpen() || acct.getType().equals("Pocket")) {
             return false;
         }
@@ -66,7 +69,6 @@ public class TransactionHandler {
             acct.setOpen(false);
         }
 
-        Timestamp time = new Timestamp(System.currentTimeMillis());
         Transaction t = new Transaction();
         t.setDatetime(time);
         t.setSrc(acct);
@@ -79,16 +81,20 @@ public class TransactionHandler {
         return db.update_acct(acct);
     }
 
-    public boolean purchase(double amount, Account acct, Customer initiator) {
+    public boolean purchase(double amount, Account acct, Customer initiator, Timestamp time) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.isOpen() || !acct.getType().equals("Pocket")) {
             return false;
         }
+
+        if (first_transaction(acct, time)) {
+            acct.deposit(-5);
+        }
+
         acct.deposit(-1 * amount);
         if (acct.getBalance() <= 0.01) {
             acct.setOpen(false);
         }
 
-        Timestamp time = new Timestamp(System.currentTimeMillis());
         Transaction t = new Transaction();
         t.setDatetime(time);
         t.setSrc(acct);
@@ -101,7 +107,7 @@ public class TransactionHandler {
         return db.update_acct(acct);
     }
 
-    public boolean transfer(double amount, Account src, Account dest, Customer initiator) {
+    public boolean transfer(double amount, Account src, Account dest, Customer initiator, Timestamp time) {
         if (amount > 2000 || amount <= 0 || amount > src.getBalance()
                 || src.getType().equals("Pocket") || dest.getType().equals("Pocket")) {
             return false;
@@ -141,7 +147,6 @@ public class TransactionHandler {
             if (src.getBalance() <= 0.01) {
                 src.setOpen(false);
             }
-            Timestamp time = new Timestamp(System.currentTimeMillis());
             Transaction t = new Transaction();
             t.setDatetime(time);
             t.setSrc(src);
@@ -156,9 +161,13 @@ public class TransactionHandler {
         return false;
     }
 
-    public boolean collect(double amount, Account acct, Customer initiator) {
+    public boolean collect(double amount, Account acct, Customer initiator, Timestamp time) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.getType().equals("Pocket")) {
             return false;
+        }
+
+        if (first_transaction(acct, time)) {
+            acct.deposit(-5);
         }
 
         acct.deposit(-1 * amount);
@@ -167,7 +176,6 @@ public class TransactionHandler {
             acct.setOpen(false);
         }
 
-        Timestamp time = new Timestamp(System.currentTimeMillis());
         Transaction t = new Transaction();
         t.setDatetime(time);
         t.setSrc(acct);
@@ -179,10 +187,14 @@ public class TransactionHandler {
         return db.update_acct(acct) && db.update_acct(acct.getLinked_acct());
     }
 
-    public boolean pay_friend(double amount, Account src, Account dest, Customer initiator) {
+    public boolean pay_friend(double amount, Account src, Account dest, Customer initiator, Timestamp time) {
         if (amount <= 0 || amount > src.getBalance() || !src.getType().equals("Pocket")
                 || !dest.getType().equals("Pocket")) {
             return false;
+        }
+
+        if (first_transaction(src, time)) {
+            src.deposit(-5);
         }
 
         src.deposit(-1 * amount);
@@ -191,7 +203,6 @@ public class TransactionHandler {
             src.setOpen(false);
         }
 
-        Timestamp time = new Timestamp(System.currentTimeMillis());
         Transaction t = new Transaction();
         t.setDatetime(time);
         t.setSrc(src);
@@ -204,7 +215,7 @@ public class TransactionHandler {
         return db.update_acct(src) && db.update_acct(dest);
     }
 
-    public boolean wire(double amount, Account src, Account dest, Customer initiator) {
+    public boolean wire(double amount, Account src, Account dest, Customer initiator, Timestamp time) {
         if (amount > 2000 || amount <= 0 || amount > src.getBalance()
                 || src.getType().equals("Pocket") || dest.getType().equals("Pocket")) {
             return false;
@@ -230,7 +241,6 @@ public class TransactionHandler {
                 src.setOpen(false);
             }
 
-            Timestamp time = new Timestamp(System.currentTimeMillis());
             Transaction t = new Transaction();
             t.setDatetime(time);
             t.setSrc(src);
@@ -246,7 +256,7 @@ public class TransactionHandler {
         return false;
     }
 
-    public boolean write_check(double amount, Account acct, String memo) {
+    public boolean write_check(double amount, Account acct, String memo, Timestamp time) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.getType().contains("Checking")) {
             return false;
         }
@@ -256,13 +266,12 @@ public class TransactionHandler {
             acct.setOpen(false);
         }
 
-        Timestamp current_time = new Timestamp(System.currentTimeMillis());
-        String check_num = String.valueOf(acct.getAccountid()).concat(String.valueOf(current_time));
+        String check_num = String.valueOf(acct.getAccountid()).concat(String.valueOf(time));
         Check check = new Check();
         check.setSrc(acct);
         check.setCheck_num(Integer.parseInt(check_num));
         check.setMoney(amount);
-        check.setDatetime(current_time);
+        check.setDatetime(time);
         check.setMemo(memo);
 
         return db.insert_check(check);
@@ -374,5 +383,13 @@ public class TransactionHandler {
 
     public Account getExternal_acct() {
         return external_acct;
+    }
+
+    private boolean first_transaction(Account acct, Timestamp time) {
+        Timestamp start_of_month = Timestamp.valueOf(time.toLocalDateTime().toLocalDate().withDayOfMonth(1).atTime(0, 0));
+
+        String sql = "SELECT COUNT(*) FROM Transactions WHERE source = " + String.valueOf(acct.getAccountid())
+                + " AND datetime >= TO_DATE('" + start_of_month.toString() + "', YYYY-MM-DD hh:mm:ss.fffffffff)";
+        return (db.aggregate_query(sql) == 0);
     }
 }
