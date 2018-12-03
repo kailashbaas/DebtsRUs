@@ -7,7 +7,6 @@ public abstract class Account {
     protected double interest_rate;
     protected boolean interest_added;
     protected double balance;
-    protected double avg_daily_balance;
     protected Customer primary_owner;
     protected String type;
     protected Account linked_acct;
@@ -18,7 +17,6 @@ public abstract class Account {
     public abstract double getInterest_rate();
     public abstract boolean getInterest_added();
     public abstract double getBalance();
-    public abstract double getAvg_daily_balance();
     public abstract Customer getPrimary_owner();
     public abstract String getType();
     public abstract Account getLinked_acct();
@@ -29,7 +27,6 @@ public abstract class Account {
     public abstract void setInterest_added(boolean interest_added);
     public abstract void setBalance(double balance);
     public abstract void deposit(double balance);
-    public abstract void setAvg_daily_balance(double balance);
     public abstract void setPrimary_owner(Customer primary_owner);
     public abstract void setType(String type);
     public abstract void setLinked_acct(Account acct);

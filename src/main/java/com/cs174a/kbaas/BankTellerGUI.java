@@ -119,6 +119,15 @@ public class BankTellerGUI {
         });
         content.add(change_date);
 
+        JButton change_interest_rate = new JButton("Change Interest Rate");
+        change_interest_rate.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                run_change_interest_rate_screen();
+            }
+        });
+        content.add(change_interest_rate);
+
         panel.add(content, BorderLayout.CENTER);
         frame.getContentPane().add(panel);
         frame.setSize(500, 500);
@@ -283,8 +292,8 @@ public class BankTellerGUI {
                                 labels.add(new JLabel(label_content));
                             }
 
-                            JLabel initial_balance = new JLabel("Initial Balance: " + String.valueOf(acct.getBalance() + transaction_total));
-                            labels.add(initial_balance);
+                            JLabel initial_balance_label = new JLabel("Initial Balance: " + String.valueOf(acct.getBalance() + transaction_total));
+                            labels.add(initial_balance_label);
                             JLabel final_balance = new JLabel("Final Balance: " + String.valueOf(acct.getBalance()));
                             labels.add(final_balance);
                             total_balance += acct.getBalance();
@@ -420,7 +429,6 @@ public class BankTellerGUI {
 
     private void run_add_interest_screen() {
         String sql = "SELECT * FROM Accounts WHERE open = true AND interest_added = false";
-        //generateAvgDailyBalance();
         HashMap<Integer, Account> valid_accts = db.query_acct(sql);
         if (valid_accts.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "No available accounts to add interest to");
@@ -437,7 +445,7 @@ public class BankTellerGUI {
 
         TransactionHandler t = new TransactionHandler();
         for (int i = 0; i < accts.size(); i++) {
-            if (!t.accrue_interest(accts.get(i))) {
+            if (!t.accrue_interest(accts.get(i), time)) {
                 JOptionPane.showMessageDialog(frame, "There was error adding interest to account " + String.valueOf(accts.get(i).getAccountid()));
                 return;
             }
@@ -467,6 +475,59 @@ public class BankTellerGUI {
         JOptionPane.showMessageDialog(frame, "Deleted all transactions from the database");
     }
 
+    private void run_change_interest_rate_screen() {
+        JFrame frame1 = new JFrame();
+        frame1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+
+        JLabel acct_type_label = new JLabel("Account Type:");
+        String[] account_types = {"Savings", "Interest-Checking", "Student-Checking", "Pocket"};
+        JComboBox acct_type_selection = new JComboBox(account_types);
+
+        JLabel interest_label = new JLabel("Interest Rate:");
+        JTextField interest_rate_entry = new JTextField(20);
+
+        JButton change_rate = new JButton("Change Interest Rate");
+        change_rate.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                String type = acct_type_selection.getSelectedItem().toString();
+                String interest_rate = interest_rate_entry.getText();
+                if (interest_rate.matches("[0-9]+(.[0-9]+)?")) {
+                    String sql = "UPDATE Accounts SET interest_rate = " + interest_rate
+                            + " WHERE type = " + type;
+                    db.generic_update(sql);
+                    JOptionPane.showMessageDialog(frame1, "Successfully updated interest rate");
+                }
+                else {
+                    JOptionPane.showMessageDialog(frame1, "Invalid interest rate");
+                }
+            }
+        });
+
+        GridBagConstraints c  = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel.add(acct_type_label, c);
+
+        c.gridx = 1;
+        panel.add(acct_type_selection, c);
+
+        c.gridx = 0;
+        c.gridy = 1;
+        panel.add(interest_label, c);
+
+        c.gridx = 1;
+        panel.add(interest_rate_entry, c);
+
+        c.gridy = 2;
+        panel.add(change_rate, c);
+        frame1.add(panel);
+        frame1.setSize(400, 400);
+        frame1.setVisible(true);
+    }
 
     private class ButtonHandler implements ActionListener {
         @Override

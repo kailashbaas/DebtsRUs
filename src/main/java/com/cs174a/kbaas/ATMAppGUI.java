@@ -136,6 +136,10 @@ public class ATMAppGUI {
         TransactionButtonListener listener = new TransactionButtonListener();
         String greeting = "Welcome, " + customer.getName();
         JLabel greeting_label = new JLabel(greeting);
+        String acct_msg = "Account " + String.valueOf(acct.getAccountid());
+        JLabel acct_label = new JLabel(acct_msg);
+        String balance = "Balance: " + String.valueOf(acct.getBalance());
+        JLabel balance_label = new JLabel(balance);
         JButton deposit = new JButton("Deposit");
         deposit.addActionListener(listener);
         JButton withdraw = new JButton("Withdraw");
@@ -153,6 +157,8 @@ public class ATMAppGUI {
         });
 
         panel.add(greeting_label);
+        panel.add(acct_label);
+        panel.add(balance_label);
         panel.add(deposit);
         panel.add(withdraw);
         panel.add(transfer);

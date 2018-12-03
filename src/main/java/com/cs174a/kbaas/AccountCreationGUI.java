@@ -99,7 +99,6 @@ public class AccountCreationGUI {
                 acct.setBranch(branch_name);
                 acct.setBalance(Double.parseDouble(initial_balance));
                 acct.setInterest_added(false);
-                acct.setAvg_daily_balance(0);
                 acct.setType(((String) type_choices.getSelectedItem()));
                 if (acct.getType().equals("Pocket")) {
                     String sql = "SELECT * FROM Account WHERE accountid = " + linked_acct_id;

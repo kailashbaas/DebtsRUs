@@ -58,14 +58,6 @@ public class PocketAccount extends Account {
         this.balance += amount;
     }
 
-    public double getAvg_daily_balance() {
-        return avg_daily_balance;
-    }
-
-    public void setAvg_daily_balance(double avg_daily_balance) {
-        this.avg_daily_balance = avg_daily_balance;
-    }
-
     public Customer getPrimary_owner() {
         return primary_owner;
     }

@@ -1,7 +1,9 @@
 package com.cs174a.kbaas;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 
 // TODO: flat $5 fee on first transaction on a pocket account
 public class TransactionHandler {
@@ -266,14 +268,108 @@ public class TransactionHandler {
         return db.insert_check(check);
     }
 
-    public boolean accrue_interest(Account acct) {
-        acct.deposit(acct.getAvg_daily_balance() * acct.getInterest_rate() / 12);
+    public boolean accrue_interest(Account acct, Timestamp time) {
+        double avg_daily_balance = generate_avg_daily_balance(acct, time);
+        acct.deposit(avg_daily_balance * acct.getInterest_rate() / 12);
         acct.setInterest_added(true);
         return db.update_acct(acct);
     }
 
-    public void generate_monthly_statement(Account acct) {
+    private double generate_avg_daily_balance(Account acct, Timestamp time) {
+        Timestamp last_month = new Timestamp(time.getTime() - (30 * 24 * 60 * 60 * 1000));
+        String acctid = String.valueOf(acct.getAccountid());
 
+        String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_DATE('" + last_month.toString()
+                + "', YYYY-MM-DD hh:mm:ss.fffffffff) AND (source = " + acctid + "OR destination = " + acctid + ")"
+                + " ORDER BY datetime ASC";
+        String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid + " ORDER BY datetime ASC";
+
+        ArrayList<Transaction> transactions = db.query_transaction(transactions_sql);
+        ArrayList<Check> checks = db.query_check(checks_sql);
+        ArrayList<Map.Entry<Double, LocalDate>> checks_and_transactions = new ArrayList<>();
+
+        double transaction_total = 0;
+
+        for (int i = 0; i < transactions.size(); i++) {
+            Transaction t = transactions.get(i);
+            LocalDate new_time = t.getDatetime().toLocalDateTime().toLocalDate();
+            double amt = 0;
+            if (acct.getAccountid() == t.getSrc().getAccountid()) {
+                transaction_total -= t.getMoney();
+                amt -= t.getMoney();
+            }
+            else {
+                transaction_total += t.getMoney();
+                amt += t.getMoney();
+            }
+            AbstractMap.SimpleEntry<Double, LocalDate> entry = new AbstractMap.SimpleEntry<>(amt, new_time);
+            checks_and_transactions.add(entry);
+        }
+
+        for (int i = 0; i < checks.size(); i++) {
+            Check c = checks.get(i);
+            LocalDate new_time = c.getDatetime().toLocalDateTime().toLocalDate();
+            transaction_total -= c.getMoney();
+            AbstractMap.SimpleEntry<Double, LocalDate> entry = new AbstractMap.SimpleEntry<>(-1 * c.getMoney(), new_time);
+            checks_and_transactions.add(entry);
+        }
+
+        Collections.sort(checks_and_transactions, new Comparator<Map.Entry<Double, LocalDate>>() {
+            @Override
+            public int compare(Map.Entry<Double, LocalDate> doubleLocalDateEntry, Map.Entry<Double, LocalDate> t1) {
+                return doubleLocalDateEntry.getValue().compareTo(t1.getValue());
+            }
+        });
+
+        int start = 0;
+        checks_and_transactions = condense_checks_and_transactions(checks_and_transactions);
+        double curr_balance = acct.getBalance() + transaction_total;
+        LocalDate old_date = last_month.toLocalDateTime().toLocalDate();
+        if (old_date.equals(checks_and_transactions.get(0).getValue())) {
+            curr_balance += checks_and_transactions.get(0).getKey();
+            start = 1;
+        }
+        int num_days;
+        double total = 0;
+
+        for (int i = start; i < checks_and_transactions.size(); i++) {
+            double amount = checks_and_transactions.get(i).getKey();
+            LocalDate date = checks_and_transactions.get(i).getValue();
+
+            num_days = date.getDayOfYear() - old_date.getDayOfYear();
+            total += (curr_balance * num_days  / 30);
+            curr_balance += amount;
+
+            old_date = date;
+        }
+
+        if (!old_date.equals(time.toLocalDateTime().toLocalDate())) {
+            int difference = time.toLocalDateTime().getDayOfYear() - old_date.getDayOfYear();
+            total += (curr_balance * difference / 30);
+        }
+
+        return total;
+    }
+
+    private ArrayList<Map.Entry<Double, LocalDate>> condense_checks_and_transactions(ArrayList<Map.Entry<Double, LocalDate>> list) {
+        double total = list.get(0).getKey();
+        LocalDate old_date = list.get(0).getValue();
+        ArrayList<Map.Entry<Double, LocalDate>> result = new ArrayList<>();
+
+        for (int i = 1; i < list.size(); i++) {
+            double amount = list.get(i).getKey();
+            LocalDate date = list.get(i).getValue();
+            if (date.equals(old_date)) {
+                total += amount;
+            }
+            else {
+                result.add(new AbstractMap.SimpleEntry<>(total, old_date));
+                old_date = date;
+                total = amount;
+            }
+        }
+
+        return result;
     }
 
     public Account getExternal_acct() {

@@ -32,7 +32,6 @@ public class DatabaseAccessor {
                 acct.interest_rate = rs.getDouble("interest_rate");
                 acct.interest_added = rs.getBoolean("interest_added");
                 acct.balance = rs.getDouble("balance");
-                acct.avg_daily_balance = rs.getDouble("avg_daily_balance");
                 acct.type = rs.getString("type");
                 acct.linked_acct = null;
                 accts.put(acct.accountid, acct);
@@ -312,13 +311,12 @@ public class DatabaseAccessor {
             pstmt.setDouble(4, acct.getInterest_rate());
             pstmt.setBoolean(5, acct.getInterest_added());
             pstmt.setDouble(6, acct.getBalance());
-            pstmt.setDouble(7, acct.getAvg_daily_balance());
-            pstmt.setInt(8, acct.getPrimary_owner().getTaxId());
-            pstmt.setString(9, acct.getType());
+            pstmt.setInt(7, acct.getPrimary_owner().getTaxId());
+            pstmt.setString(8, acct.getType());
             if (acct.linked_acct == null) {
-                pstmt.setObject(10, null);
+                pstmt.setObject(9, null);
             } else {
-                pstmt.setObject(10, acct.getLinked_acct().getAccountid());
+                pstmt.setObject(9, acct.getLinked_acct().getAccountid());
             }
             pstmt.executeUpdate();
         } catch (SQLException se) {
@@ -461,13 +459,13 @@ public class DatabaseAccessor {
     }
 
     public boolean update_acct(Account acct) {
-        if ((acct.getBalance() < 0) || (acct.getAvg_daily_balance() < 0)) {
+        if (acct.getBalance() < 0) {
             return false;
         }
         Connection conn = null;
         PreparedStatement pstmt = null;
         String sql = "UPDATE Accounts SET open = ?, branch = ?, interest_rate = ?, " +
-                "interest_added = ?, balance = ?, avg_daily_balance = ?, " +
+                "interest_added = ?, balance = ?, " +
                 "primary_owner = ?, linked_account = ? WHERE accountid = ?";
         try {
             Class.forName(JDBC_DRIVER);
@@ -478,14 +476,13 @@ public class DatabaseAccessor {
             pstmt.setObject(3, acct.getInterest_rate());
             pstmt.setObject(4, acct.getInterest_added());
             pstmt.setObject(5, acct.getBalance());
-            pstmt.setObject(6, acct.getAvg_daily_balance());
-            pstmt.setObject(7, acct.getPrimary_owner().getTaxId());
+            pstmt.setObject(6, acct.getPrimary_owner().getTaxId());
             if (acct.getLinked_acct() != null) {
-                pstmt.setObject(8, acct.getLinked_acct().getAccountid());
+                pstmt.setObject(7, acct.getLinked_acct().getAccountid());
             } else {
-                pstmt.setObject(8, null);
+                pstmt.setObject(7, null);
             }
-            pstmt.setObject(9, acct.getAccountid());
+            pstmt.setObject(8, acct.getAccountid());
             pstmt.executeUpdate();
         } catch (SQLException se) {
             se.printStackTrace();
@@ -507,6 +504,37 @@ public class DatabaseAccessor {
             }
         }
         return true;
+    }
+
+    public void generic_update(String sql) {
+        Connection conn = null;
+        Statement stmt = null;
+
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            stmt = conn.createStatement();
+
+            stmt.executeUpdate(sql);
+        } catch (SQLException se) {
+            se.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (stmt != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
     }
 
     public boolean update_customer(Customer c) {
