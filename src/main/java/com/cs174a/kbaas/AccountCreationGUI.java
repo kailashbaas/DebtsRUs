@@ -34,6 +34,13 @@ public class AccountCreationGUI {
         type_panel.add(type_choices);
         panel.add(type_panel);
 
+        JPanel accountid_panel = new JPanel(new FlowLayout());
+        JLabel accountid_label = new JLabel("Account ID:");
+        JTextField accountid = new JTextField(20);
+        accountid_panel.add(accountid_label);
+        accountid_panel.add(accountid);
+        panel.add(accountid_panel);
+
         JPanel branch_panel = new JPanel(new FlowLayout());
         JLabel branch_label = new JLabel("Branch:");
         JTextField branch = new JTextField(20);
@@ -81,6 +88,7 @@ public class AccountCreationGUI {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 Account linked = null;
+                int acct_id = Integer.parseInt(accountid.getText());
                 String branch_name = branch.getText();
                 String initial_balance = balance.getText();
                 String primary_owner_id = primary_owner.getText();
@@ -91,10 +99,8 @@ public class AccountCreationGUI {
                     JOptionPane.showMessageDialog(frame1, "Please fill in all fields");
                     return;
                 }
-                String acctid_sql = "SELECT MAX(accountid) FROM Accounts";
-                double acct_id = db.aggregate_query(acctid_sql) + 1;
                 Account acct = Account.instantiateAcct((String) type_choices.getSelectedItem());
-                acct.setAccountid((int) acct_id);
+                acct.setAccountid(acct_id);
                 acct.setOpen(true);
                 acct.setBranch(branch_name);
                 acct.setBalance(Double.parseDouble(initial_balance));
@@ -109,41 +115,56 @@ public class AccountCreationGUI {
                 String owners_string = primary_owner_id + "," + owners.getText();
                 String[] owners_arr = owners_string.split(",");
                 for (int i = 0; i < owners_arr.length; i++) {
-                    String sql = "SELECT COUNT(*) FROM Customers WHERE tax_id = " + owners_arr[i];
-                    int result = (int) db.aggregate_query(sql);
+                    String sql = "SELECT COUNT(*) AS CC FROM Customers WHERE tax_id = " + owners_arr[i];
+                    System.out.println("Sql: " + sql);
+                    int result = (int) db.aggregate_query(sql, "CC");
+                    System.out.println("############wtf#######" + result);
                     if (result == 0) {
                         String message = "Customer " + owners_arr[i] + " does not exist. You will now be directed to customer creation.";
                         JOptionPane.showMessageDialog(frame1, message);
-                        run_customer_creation(owners_arr[i]);
+                        String customer_info = JOptionPane.showInputDialog(null, "Enter the customer info in the following format: Tax ID:PIN:Name:Address");
+                        String[] info_array = customer_info.split(":");
+                        int tax_id = Integer.parseInt(info_array[0]);
+                        int hashed_pin = info_array[1].hashCode();
+                        String name = info_array[2];
+                        String address = info_array[3];
+                        new_owners.add(new Customer(tax_id, hashed_pin, name, address));
                     }
                 }
                 String primary_owner_sql = "SELECT * FROM Customers WHERE tax_id = " + primary_owner_id;
-                Customer primary_owner = db.query_customer(primary_owner_sql, "tax_id").get(Integer.parseInt(primary_owner_id));
+                Customer primary_owner = new Customer(Integer.parseInt(primary_owner_id), 0, "", "");
                 acct.setPrimary_owner(primary_owner);
 
-                String owners_sql = "SELECT * FROM Customers WHERE tax_id IN (" + primary_owner_id + ", " +  owners.getText() + ")";
+                String other_owners = "";
+                if (!owners.getText().equals("")) {
+                    other_owners = ", " + owners.getText();
+                }
+                System.out.println("primary" + primary_owner_id);
+                String owners_sql = "SELECT * FROM Customers WHERE tax_id IN (" + primary_owner_id + other_owners + ")";
                 HashMap<Integer, Customer> owners_map = db.query_customer(owners_sql, "tax_id");
                 ArrayList<Customer> owners_list = new ArrayList<>();
-                Iterator it = owners_map.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry pair = (Map.Entry) it.next();
-                    Customer c = (Customer) pair.getValue();
-                    owners_list.add(c);
+                if (!owners_map.isEmpty()) {
+                    Iterator it = owners_map.entrySet().iterator();
+                    while (it.hasNext()) {
+                        Map.Entry pair = (Map.Entry) it.next();
+                        Customer c = (Customer) pair.getValue();
+                        owners_list.add(c);
+                    }
                 }
 
                 owners_list.addAll(new_owners);
-                db.insert_new_acct(acct, owners_list);
-                String initial_depositor_sql = "SELECT * FROM Customers WHERE tax_id = " + initial_depositor.getText();
-                Customer depositor = db.query_customer(initial_depositor_sql, "tax_id").get(Integer.parseInt(initial_depositor_id));
+                db.insert_new_acct(acct, owners_list, new_owners);
+                Customer depositor = new Customer(Integer.parseInt(initial_depositor.getText()),0,"","");
+                System.out.println("1HERE##########HERE##########");
                 Transaction t = new Transaction();
                 TransactionHandler transactionHandler = new TransactionHandler();
-                t.setSrc(transactionHandler.getExternal_acct());
-                t.setDest(acct);
-                t.setMoney(acct.getBalance());
-                t.setType("Deposit");
-                t.setDatetime(time);
-                t.setInitiator(depositor);
-                db.insert_transaction(t);
+                if (acct.getType().equals("Pocket")) {
+                    transactionHandler.top_up(acct.getBalance(), acct, depositor, time);
+                }
+                else {
+                    transactionHandler.deposit(acct.getBalance(), acct, depositor, time);
+                }
+                System.out.println("2HERE##########HERE##########");
                 frame1.dispose();
             }
         });
@@ -163,20 +184,27 @@ public class AccountCreationGUI {
     }
 
     private void run_customer_creation(String preferred_tax_id) {
-        JFrame frame1 = new JFrame();
+        String customer_info = JOptionPane.showInputDialog(null, "Enter the customer info in the following format: Tax ID|PIN|Name|Address");
+        String[] info_array = customer_info.split("|");
+        int tax_id = Integer.parseInt(info_array[0]);
+        int hashed_pin = info_array[1].hashCode();
+        String name = info_array[2];
+        String address = info_array[3];
+        String msg = String.valueOf(tax_id) + " " + String.valueOf(hashed_pin) + " " + name + " " + address;
+        System.out.println("################" + msg);
+        new_owners.add(new Customer(tax_id, hashed_pin, name, address));
+        /*JFrame frame1 = new JFrame();
         frame1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        String tax_id_sql = "SELECT MAX(tax_id) FROM Customers";
-        double tax_id = db.aggregate_query(tax_id_sql) + 1;
-        /*JPanel tax_id_panel = new JPanel(new FlowLayout());
+        JPanel tax_id_panel = new JPanel(new FlowLayout());
         JLabel tax_id_label = new JLabel("Tax ID:");
         JTextField tax_id = new JTextField(20);
         tax_id_panel.add(tax_id_label);
         tax_id_panel.add(tax_id);
-        panel.add(tax_id_panel);*/
+        panel.add(tax_id_panel);
 
         JPanel pin_panel = new JPanel(new FlowLayout());
         JLabel pin_label = new JLabel("PIN:");
@@ -209,13 +237,16 @@ public class AccountCreationGUI {
                     JOptionPane.showMessageDialog(frame1, "Please fill out every field");
                     return;
                 }
-                int customer_tax_id = Integer.parseInt(preferred_tax_id);
+                int customer_tax_id = Integer.parseInt(tax_id.getText());
                 int hashed_pin = pin.getText().hashCode();
                 new_owners.add(new Customer(customer_tax_id, hashed_pin, customer_name, customer_addr));
+                frame1.dispose();
             }
         });
+        panel.add(create);
 
+        frame1.getContentPane().add(panel);
         frame1.setSize(400, 400);
-        frame1.setVisible(true);
+        frame1.setVisible(true);*/
     }
 }

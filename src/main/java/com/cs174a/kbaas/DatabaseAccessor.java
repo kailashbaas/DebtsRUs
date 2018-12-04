@@ -7,8 +7,8 @@ import java.util.HashMap;
 public class DatabaseAccessor {
     private static final String JDBC_DRIVER = "oracle.jdbc.driver.OracleDriver";
     private static final String DB_URL = "jdbc:oracle:thin:@cloud-34-133.eci.ucsb.edu:1521:XE";
-    private static final String USERNAME = "";
-    private static final String PASSWORD = "";
+    private static final String USERNAME = "kailashbaas";
+    private static final String PASSWORD = "6551261";
 
     // Account.linked_account and Account.primary_owner will be null for all
     // accounts, will require additional processing to set these fields
@@ -247,7 +247,7 @@ public class DatabaseAccessor {
         return owners;
     }
 
-    public double aggregate_query(String query) {
+    public double aggregate_query(String query, String name) {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
@@ -261,7 +261,7 @@ public class DatabaseAccessor {
             rs = stmt.executeQuery(query);
 
             while (rs.next()) {
-                result = rs.getDouble(1);
+                result = rs.getDouble(name);
             }
         } catch (SQLException se) {
             se.printStackTrace();
@@ -285,21 +285,27 @@ public class DatabaseAccessor {
         return result;
     }
 
-    public void insert_new_acct(Account acct, ArrayList<Customer> owners) {
+    public void insert_new_acct(Account acct, ArrayList<Customer> owners, ArrayList<Customer> new_owners) {
         int accountid = acct.getAccountid();
-        insert_acct(acct);
-        // TODO: change insert_customer to insert_owner
-        for (int i = 0; i < owners.size(); i++) {
-            insert_customer(owners.get(i), accountid);
+        System.out.println("here1");
+        for (int i = 0; i < new_owners.size(); i++) {
+            insert_customer(new_owners.get(i));
         }
+        System.out.println("here2");
+        insert_acct(acct);
+        System.out.println("here3");
+        for (int i = 0; i < owners.size(); i++) {
+            insert_owner(owners.get(i), accountid);
+        }
+        System.out.println("here4");
     }
 
     private void insert_acct(Account acct) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String sql = "INSERT INTO Accounts(accountid, open, branch, interest_rate, interest_added, " +
-                "balance, primary_owner, type, linked_account " +
-                "VALUES(?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO Accounts (accountid, open, branch, interest_rate, interest_added, " 
+            + "balance, type, primary_owner, linked_account) " +
+                "VALUES(?,?,?,?,?,?,?,?,?)";
 
         try {
             Class.forName(JDBC_DRIVER);
@@ -313,20 +319,22 @@ public class DatabaseAccessor {
             if (acct.getInterest_added()) {
                 interest_added = "Y";
             }
-            pstmt.setInt(1, acct.getAccountid());
-            pstmt.setString(2, open);
-            pstmt.setString(3, acct.getBranch());
-            pstmt.setDouble(4, acct.getInterest_rate());
-            pstmt.setString(5, interest_added);
-            pstmt.setDouble(6, acct.getBalance());
-            pstmt.setInt(7, acct.getPrimary_owner().getTaxId());
-            pstmt.setString(8, acct.getType());
+            pstmt.setObject(1, acct.getAccountid());
+            pstmt.setObject(2, open);
+            pstmt.setObject(3, acct.getBranch());
+            pstmt.setObject(4, acct.getInterest_rate());
+            pstmt.setObject(5, interest_added);
+            pstmt.setObject(6, acct.getBalance());
+            pstmt.setObject(7, acct.getType());
+            pstmt.setObject(8, acct.getPrimary_owner().getTaxId());
             if (acct.linked_acct == null) {
                 pstmt.setObject(9, null);
             } else {
                 pstmt.setObject(9, acct.getLinked_acct().getAccountid());
             }
+            System.out.println("preupdate");
             pstmt.executeUpdate();
+            System.out.println("postupdate");
         } catch (SQLException se) {
             se.printStackTrace();
         } catch (Exception e) {
@@ -350,11 +358,10 @@ public class DatabaseAccessor {
 
     // This method inserts into both Customers and Owners, as each customer needs to own an account
     // to be in the database
-    private void insert_customer(Customer c, int accountid) {
+    private void insert_customer(Customer c) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         String customers_sql = "INSERT INTO Customers(tax_id, pin, name, address) VALUES(?,?,?,?)";
-        String owners_sql = "INSERT INTO Owners(accountid, tax_id) VALUES(?, ?)";
 
         try {
             Class.forName(JDBC_DRIVER);
@@ -365,6 +372,35 @@ public class DatabaseAccessor {
             pstmt.setObject(3, c.getName());
             pstmt.setObject(4, c.getAddress());
             pstmt.executeUpdate();
+        } catch (SQLException se) {
+            se.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (pstmt != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+    }
+
+    private void insert_owner(Customer c, int accountid) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String owners_sql = "INSERT INTO Owners(accountid, tax_id) VALUES(?,?)";
+
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
             pstmt = conn.prepareStatement(owners_sql);
             pstmt.setObject(1, accountid);
             pstmt.setObject(2, c.getTaxId());

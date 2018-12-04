@@ -28,7 +28,7 @@ public class BankTellerGUI {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(title, BorderLayout.NORTH);
 
-        JLabel date = new JLabel(time.toString());
+        JLabel date = new JLabel(time.getCurrent_time().toString());
         panel.add(date, BorderLayout.SOUTH);
 
         JPanel content = new JPanel();
@@ -71,7 +71,7 @@ public class BankTellerGUI {
         delete_transactions.addActionListener(listener);
         content.add(delete_transactions);
 
-        JButton change_date = new JButton("Change date");
+        JButton change_date = new JButton("Change Date");
         change_date.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
@@ -353,7 +353,7 @@ public class BankTellerGUI {
 
     private void run_dter_screen() {
         String sql = "SELECT * FROM (Customers C JOIN Accounts A ON C.tax_id = A.primary_owner) JOIN Transactions T ON T.dest = A.accountid"
-                + "GROUP BY C.tax_id"
+                + "GROUP BY C.tax_id "
                 + "HAVING SUM(T.money) > 10000";
         HashMap<Integer, Customer> dter_customers = db.query_customer(sql, "tax_id");
         ArrayList<JLabel> labels = new ArrayList<>();

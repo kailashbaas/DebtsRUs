@@ -6,7 +6,6 @@ import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-// TODO: check action listeners for 1 == 1 in if statement
 public class ATMAppGUI {
 
     private JFrame frame;
@@ -43,10 +42,9 @@ public class ATMAppGUI {
                     JOptionPane.showMessageDialog(frame, "Please enter your PIN");
                 } else {
                     int hashed_pin = (new String(pin_entry.getPassword())).hashCode();
-                    if (1 == 1 || ATMAppGUI.this.db.verifyPin(hashed_pin)) {
-                        //String query = "SELECT * FROM Customer WHERE pin = " + String.valueOf(hashed_pin);
-                        //Customer c = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
-                        ATMAppGUI.this.customer = new Customer(1, 1, "a", "b"); // remove this and uncomment after db setup
+                    if (ATMAppGUI.this.db.verifyPin(hashed_pin)) {
+                        String query = "SELECT * FROM Customer WHERE pin = " + String.valueOf(hashed_pin);
+                        Customer c = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
                         ATMAppGUI.this.run_atm_app();
                     } else {
                         JOptionPane.showMessageDialog(frame, "Incorrect PIN");
@@ -89,9 +87,7 @@ public class ATMAppGUI {
 
         ArrayList<Integer> accountids = new ArrayList<Integer>();
         String query = "SELECT * FROM Accounts NATURAL JOIN Owners WHERE ownerid = " + String.valueOf(customer.getTaxId());
-        final HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();//db.query_acct(query);
-        Account acct1 = new CheckingAccount("Student");
-        accounts.put(0, acct1);
+        final HashMap<Integer, Account> accounts = db.query_acct(query);
 
         for (int i = 0; i < 10; i++) {
             accountids.add(i);
@@ -103,7 +99,7 @@ public class ATMAppGUI {
             public void actionPerformed(ActionEvent actionEvent) {
                 Integer accountid = (Integer) accountid_list.getSelectedItem();
                 ATMAppGUI.this.acct = accounts.get(accountid);
-                if (1 != 1 && ATMAppGUI.this.acct.getType().equals("Pocket")) {
+                if (ATMAppGUI.this.acct.getType().equals("Pocket")) {
                     ATMAppGUI.this.run_pocket_app();
                 } else {
                     ATMAppGUI.this.run_main_app();
