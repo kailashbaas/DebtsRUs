@@ -27,10 +27,10 @@ public class DatabaseAccessor {
             while (rs.next()) {
                 Account acct = Account.instantiateAcct(rs.getString("type"));
                 acct.accountid = rs.getInt("accountid");
-                acct.open = rs.getBoolean("open");
+                acct.open = (rs.getString("open").equals('Y'));
                 acct.branch = rs.getString("branch");
                 acct.interest_rate = rs.getDouble("interest_rate");
-                acct.interest_added = rs.getBoolean("interest_added");
+                acct.interest_added = (rs.getString("interest_added").equals('Y'));
                 acct.balance = rs.getDouble("balance");
                 acct.type = rs.getString("type");
                 acct.linked_acct = null;
@@ -298,18 +298,26 @@ public class DatabaseAccessor {
         Connection conn = null;
         PreparedStatement pstmt = null;
         String sql = "INSERT INTO Accounts(accountid, open, branch, interest_rate, interest_added, " +
-                "balance, avg_daily_balance, primary_owner, type, linked_account " +
+                "balance, primary_owner, type, linked_account " +
                 "VALUES(?,?,?,?,?,?,?,?,?,?)";
 
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
             pstmt = conn.prepareStatement(sql);
+            String open = "Y";
+            if (!acct.isOpen()) {
+                open = "N";
+            }
+            String interest_added = "N";
+            if (acct.getInterest_added()) {
+                interest_added = "Y";
+            }
             pstmt.setInt(1, acct.getAccountid());
-            pstmt.setBoolean(2, acct.isOpen());
+            pstmt.setString(2, open);
             pstmt.setString(3, acct.getBranch());
             pstmt.setDouble(4, acct.getInterest_rate());
-            pstmt.setBoolean(5, acct.getInterest_added());
+            pstmt.setString(5, interest_added);
             pstmt.setDouble(6, acct.getBalance());
             pstmt.setInt(7, acct.getPrimary_owner().getTaxId());
             pstmt.setString(8, acct.getType());
@@ -471,10 +479,18 @@ public class DatabaseAccessor {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, acct.isOpen());
+            String open = "Y";
+            if (!acct.isOpen()) {
+                open = "N";
+            }
+            String interest_added = "N";
+            if (acct.getInterest_added()) {
+                interest_added = "Y";
+            }
+            pstmt.setObject(1, open);
             pstmt.setObject(2, acct.getBranch());
             pstmt.setObject(3, acct.getInterest_rate());
-            pstmt.setObject(4, acct.getInterest_added());
+            pstmt.setObject(4, interest_added);
             pstmt.setObject(5, acct.getBalance());
             pstmt.setObject(6, acct.getPrimary_owner().getTaxId());
             if (acct.getLinked_acct() != null) {

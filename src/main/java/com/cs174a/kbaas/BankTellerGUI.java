@@ -455,7 +455,7 @@ public class BankTellerGUI {
 
 
     private void run_delete_closed_accts_screen() {
-        String accts_sql = "SELECT * FROM Accounts WHERE open = false";
+        String accts_sql = "SELECT * FROM Accounts WHERE open = 'N'";
         HashMap<Integer, Account> closed_accts = db.query_acct(accts_sql);
 
         ArrayList<JLabel> deleted_accts = new ArrayList<>();
