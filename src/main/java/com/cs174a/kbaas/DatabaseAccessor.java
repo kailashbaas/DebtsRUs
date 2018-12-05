@@ -396,7 +396,7 @@ public class DatabaseAccessor {
     private void insert_owner(Customer c, int accountid) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String owners_sql = "INSERT INTO Owners(accountid, tax_id) VALUES(?,?)";
+        String owners_sql = "INSERT INTO Owners(accountid, ownerid) VALUES(?,?)";
 
         try {
             Class.forName(JDBC_DRIVER);
@@ -429,7 +429,7 @@ public class DatabaseAccessor {
     public void insert_transaction(Transaction t) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String transaction_sql = "INSERT INTO Owners(source, destination, datetime, type, money, initiator) VALUES(?,?,?,?,?,?)";
+        String transaction_sql = "INSERT INTO Transactions(source, destination, datetime, type, money, initiator) VALUES(?,?,?,?,?,?)";
 
         try {
             Class.forName(JDBC_DRIVER);
