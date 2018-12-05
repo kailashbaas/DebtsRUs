@@ -12,6 +12,7 @@ public class BankTellerGUI {
     private JFrame frame;
     private DatabaseAccessor db;
     private CurrentTimeWrapper time;
+    private Timestamp start;
 
     public static void main(String[] args) {
         BankTellerGUI gui = new BankTellerGUI();
@@ -20,6 +21,7 @@ public class BankTellerGUI {
 
     public void run() {
         time = new CurrentTimeWrapper();
+        start = new Timestamp(System.currentTimeMillis());
         frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
@@ -80,7 +82,7 @@ public class BankTellerGUI {
 
                 JPanel panel1 = new JPanel();
                 panel1.setLayout(new GridBagLayout());
-                JLabel date_label = new JLabel("Please enter the new date using the MM-dd-yyyy format");
+                JLabel date_label = new JLabel("Please enter the new date and time using the MM-dd-yyyy hh:mm:ss format");
                 JTextField date_entry = new JTextField(11);
 
                 GridBagConstraints c = new GridBagConstraints();
@@ -96,12 +98,12 @@ public class BankTellerGUI {
                 submit_change.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent actionEvent) {
-                        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+                        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy hh:mm:ss");
                         try {
                             Date new_date = formatter.parse(date_entry.getText());
                             time.updateCurrent_time(new Timestamp(new_date.getTime()));
                             frame1.dispose();
-                            date.setText(time.toString());
+                            date.setText(time.getCurrent_time().toString());
                             frame.validate();
                         } catch (ParseException e) {
                             JOptionPane.showMessageDialog(frame1, "Please use the correct date format (MM-dd-yyyy)");
@@ -159,10 +161,13 @@ public class BankTellerGUI {
                 if (validate_acct(acct_entry.getText()) && validate_amount(amt_entry.getText())) {
                     int accountid = Integer.parseInt(acct_entry.getText());
                     double amt = Double.parseDouble(amt_entry.getText());
+
                     String sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(accountid);
                     Account acct = db.query_acct(sql).get(accountid);
                     TransactionHandler t = new TransactionHandler();
-                    t.write_check(amt, acct, memo_label.getText(), time.getCurrent_time());
+                    Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                    Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                    t.write_check(amt, acct, memo_label.getText(), transac_time);
                 }
                 else {
                     JOptionPane.showMessageDialog(frame, "Invalid accountid or amount");
@@ -234,7 +239,7 @@ public class BankTellerGUI {
 
                             String owners_sql = "SELECT * FROM Customers C JOIN Owners O ON C.tax_id = O.ownerid";
                             String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_DATE('" + last_month.toString()
-                                    + "', YYYY-MM-DD hh:mm:ss.fffffffff) AND (source = " + acctid + "OR destination = " + acctid + ")";
+                                    + "', 'YYYY-MM-DD hh:mm:ss.fffffffff') AND (source = " + acctid + "OR destination = " + acctid + ")";
                             String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid;
 
                             HashMap<Integer, Customer> owners = db.query_customer(owners_sql, "tax_id");
@@ -385,7 +390,7 @@ public class BankTellerGUI {
             public void actionPerformed(ActionEvent actionEvent) {
                 if (validate_acct(customer_entry.getText())) {
                     int tax_id = Integer.parseInt(customer_entry.getText());
-                    String sql = "SELECT * FROM Accounts NATURAL JOIN Owners WHERE tax_id= " + String.valueOf(tax_id);
+                    String sql = "SELECT * FROM Accounts A NATURAL JOIN Owners O WHERE O.ownerid = " + String.valueOf(tax_id);
                     HashMap<Integer, Account> accts = db.query_acct(sql);
                     ArrayList<JLabel> acct_labels = new ArrayList<>();
                     Iterator it = accts.entrySet().iterator();
@@ -444,8 +449,10 @@ public class BankTellerGUI {
         }
 
         TransactionHandler t = new TransactionHandler();
+        Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+        Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
         for (int i = 0; i < accts.size(); i++) {
-            if (!t.accrue_interest(accts.get(i), time.getCurrent_time())) {
+            if (!t.accrue_interest(accts.get(i), transac_time)) {
                 JOptionPane.showMessageDialog(frame, "There was error adding interest to account " + String.valueOf(accts.get(i).getAccountid()));
                 return;
             }
@@ -471,7 +478,7 @@ public class BankTellerGUI {
     }
 
     private void run_delete_transactions_screen() {
-        db.delete_transactions();
+        db.delete_transactions(time.getCurrent_time());
         JOptionPane.showMessageDialog(frame, "Deleted all transactions from the database");
     }
 

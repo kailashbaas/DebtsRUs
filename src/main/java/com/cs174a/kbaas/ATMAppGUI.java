@@ -2,9 +2,12 @@ package com.cs174a.kbaas;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.Timestamp;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class ATMAppGUI {
 
@@ -13,6 +16,7 @@ public class ATMAppGUI {
     private Account acct;
     private Customer customer;
     private CurrentTimeWrapper time;
+    private Timestamp start;
 
     public static void main(String[] args) {
         ATMAppGUI gui = new ATMAppGUI();
@@ -24,6 +28,7 @@ public class ATMAppGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
         time = new CurrentTimeWrapper();
+        start = new Timestamp(System.currentTimeMillis());
 
         JLabel title = new JLabel("DebtsRUs ATM App Login", SwingConstants.CENTER);
 
@@ -43,8 +48,8 @@ public class ATMAppGUI {
                 } else {
                     int hashed_pin = (new String(pin_entry.getPassword())).hashCode();
                     if (ATMAppGUI.this.db.verifyPin(hashed_pin)) {
-                        String query = "SELECT * FROM Customer WHERE pin = " + String.valueOf(hashed_pin);
-                        Customer c = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
+                        String query = "SELECT * FROM Customers WHERE pin = " + String.valueOf(hashed_pin);
+                        ATMAppGUI.this.customer = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
                         ATMAppGUI.this.run_atm_app();
                     } else {
                         JOptionPane.showMessageDialog(frame, "Incorrect PIN");
@@ -89,9 +94,13 @@ public class ATMAppGUI {
         String query = "SELECT * FROM Accounts NATURAL JOIN Owners WHERE ownerid = " + String.valueOf(customer.getTaxId());
         final HashMap<Integer, Account> accounts = db.query_acct(query);
 
-        for (int i = 0; i < 10; i++) {
-            accountids.add(i);
+        Iterator it = accounts.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Account acct = (Account) pair.getValue();
+            accountids.add(acct.getAccountid());
         }
+
         final JComboBox accountid_list = new JComboBox(accountids.toArray());
 
         JButton button = new JButton("Continue");
@@ -104,6 +113,13 @@ public class ATMAppGUI {
                 } else {
                     ATMAppGUI.this.run_main_app();
                 }
+            }
+        });
+
+        JButton change_pin = new JButton("Change PIN");
+        change_pin.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+                ATMAppGUI.this.run_change_pin();
             }
         });
 
@@ -120,6 +136,7 @@ public class ATMAppGUI {
         panel.add(button, constraints);
 
         frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(change_pin, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -223,11 +240,15 @@ public class ATMAppGUI {
                     return;
                 }
                 double deposit_amount = Double.parseDouble(amount.getText());
+                System.out.println("deposit amount" + deposit_amount);
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.deposit(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.deposit(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your deposit");
                 }
+                ATMAppGUI.this.run_main_app();
             }
         });
 
@@ -273,10 +294,13 @@ public class ATMAppGUI {
                 }
                 double deposit_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.top_up(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.top_up(deposit_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your top-up");
                 }
+                ATMAppGUI.this.run_pocket_app();
             }
         });
 
@@ -318,14 +342,19 @@ public class ATMAppGUI {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
+                    System.out.println("if condition triggered");
                     return;
                 }
                 double withdrawal_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.withdraw(withdrawal_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                System.out.println("here");
+                boolean result = t.withdraw(withdrawal_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your withdrawal");
                 }
+                ATMAppGUI.this.run_main_app();
             }
         });
 
@@ -371,10 +400,13 @@ public class ATMAppGUI {
                 }
                 double purchase_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.purchase(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.purchase(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your purchase");
                 }
+                ATMAppGUI.this.run_pocket_app();
             }
         });
 
@@ -424,10 +456,13 @@ public class ATMAppGUI {
                 Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
                 double transfer_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.transfer(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.transfer(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your transfer");
                 }
+                ATMAppGUI.this.run_main_app();
             }
         });
 
@@ -477,10 +512,13 @@ public class ATMAppGUI {
                 }
                 double purchase_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.collect(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.collect(purchase_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your collect");
                 }
+                ATMAppGUI.this.run_pocket_app();
             }
         });
 
@@ -530,10 +568,13 @@ public class ATMAppGUI {
                 Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
                 double transfer_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.wire(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.wire(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your wire");
                 }
+                ATMAppGUI.this.run_main_app();
             }
         });
 
@@ -587,10 +628,13 @@ public class ATMAppGUI {
                 Account dest = ATMAppGUI.this.db.query_acct(sql).get(Integer.parseInt(dest_account.getText()));
                 double transfer_amount = Double.parseDouble(amount.getText());
                 TransactionHandler t = new TransactionHandler();
-                boolean result = t.pay_friend(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, time.getCurrent_time());
+                Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
+                Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
+                boolean result = t.pay_friend(transfer_amount, ATMAppGUI.this.acct, dest, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your pay-friend request");
                 }
+                ATMAppGUI.this.run_pocket_app();
             }
         });
 
@@ -620,6 +664,65 @@ public class ATMAppGUI {
 
         frame.getContentPane().add(panel, BorderLayout.CENTER);
         frame.validate();
+    }
+
+    private void run_change_pin() {
+        JFrame frame1 = new JFrame();
+        frame1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JPanel panel1 = new JPanel(new GridBagLayout());
+
+        JLabel old_pin_label = new JLabel("Old PIN");
+        final JPasswordField old_pin_entry = new JPasswordField(20);
+
+        JLabel new_pin_label = new JLabel("New PIN");
+        final JPasswordField new_pin_entry = new JPasswordField(20);
+
+        JButton change_pin = new JButton("Change PIN");
+        change_pin.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (!validate_credentials(old_pin_entry.getPassword())) {
+                    // display error msg
+                    JOptionPane.showMessageDialog(frame, "Please enter your old PIN");
+                } else {
+                    int hashed_pin = (new String(old_pin_entry.getPassword())).hashCode();
+                    int hashed_new_pin = (new String(new_pin_entry.getPassword()).hashCode());
+                    if (ATMAppGUI.this.db.verifyPin(hashed_pin)) {
+                        String query = "SELECT * FROM Customers WHERE pin = " + String.valueOf(hashed_pin);
+                        Customer c = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
+                        c.setPin(hashed_new_pin);
+                        System.out.println("new pin" + c.getPin());
+                        ATMAppGUI.this.db.update_customer(c);
+                        JOptionPane.showMessageDialog(null, "Updated PIN");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Incorrect PIN");
+                    }
+                }
+                frame1.dispose();
+            }
+        });
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        panel1.add(old_pin_label, c);
+
+        c.gridx = 1;
+        panel1.add(old_pin_entry, c);
+
+        c.gridx = 0;
+        c.gridy = 1;
+        panel1.add(new_pin_label, c);
+
+        c.gridx = 1;
+        panel1.add(new_pin_entry, c);
+
+        c.gridy = 2;
+        panel1.add(change_pin, c);
+
+        frame1.getContentPane().add(panel1);
+        frame1.setSize(400, 400);
+        frame1.setVisible(true);
     }
 
     private boolean validate_credentials(char[] pin) {

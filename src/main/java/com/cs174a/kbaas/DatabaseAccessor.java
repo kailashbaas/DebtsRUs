@@ -26,14 +26,20 @@ public class DatabaseAccessor {
             rs = stmt.executeQuery(query);
             while (rs.next()) {
                 Account acct = Account.instantiateAcct(rs.getString("type"));
-                acct.accountid = rs.getInt("accountid");
-                acct.open = (rs.getString("open").equals('Y'));
-                acct.branch = rs.getString("branch");
-                acct.interest_rate = rs.getDouble("interest_rate");
-                acct.interest_added = (rs.getString("interest_added").equals('Y'));
-                acct.balance = rs.getDouble("balance");
-                acct.type = rs.getString("type");
-                acct.linked_acct = null;
+                acct.setAccountid(rs.getInt("accountid"));
+                System.out.println("rs.getString(open)" + rs.getString("open"));
+                acct.setOpen(rs.getString("open").equals("Y"));
+                acct.setBranch(rs.getString("branch"));
+                acct.setInterest_rate(rs.getDouble("interest_rate"));
+                acct.setInterest_added(rs.getString("interest_added").equals("Y"));
+                acct.setBalance(rs.getDouble("balance"));
+                acct.setType(rs.getString("type"));
+                if (acct.getType().equals("Pocket")) {
+                    String sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(rs.getInt("linked_account"));
+                    acct.setLinked_acct(this.query_acct(sql).get(rs.getInt("linked_account")));
+                }
+                String primary_owner_sql = "SELECT * FROM Customers WHERE tax_id = " + String.valueOf(rs.getInt("primary_owner"));
+                acct.setPrimary_owner(this.query_customer(primary_owner_sql, "tax_id").get(rs.getInt("primary_owner")));
                 accts.put(acct.accountid, acct);
             }
         } catch (SQLException se) {
@@ -42,17 +48,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return accts;
@@ -90,17 +91,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return checks;
@@ -138,17 +134,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return customers;
@@ -186,17 +177,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return transactions;
@@ -231,17 +217,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return owners;
@@ -269,17 +250,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return result;
@@ -341,17 +317,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -378,17 +349,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -411,17 +377,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -441,24 +402,21 @@ public class DatabaseAccessor {
             pstmt.setObject(4, t.getType());
             pstmt.setObject(5, t.getMoney());
             pstmt.setObject(6, t.getInitiator().getTaxId());
+            System.out.println("preinsert");
             pstmt.executeUpdate();
+            System.out.println("postinsert");
         } catch (SQLException se) {
             se.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -486,17 +444,12 @@ public class DatabaseAccessor {
             return false;
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return true;
@@ -528,6 +481,7 @@ public class DatabaseAccessor {
             pstmt.setObject(3, acct.getInterest_rate());
             pstmt.setObject(4, interest_added);
             pstmt.setObject(5, acct.getBalance());
+            System.out.println("in update_acct: " + (acct.getPrimary_owner() == null));
             pstmt.setObject(6, acct.getPrimary_owner().getTaxId());
             if (acct.getLinked_acct() != null) {
                 pstmt.setObject(7, acct.getLinked_acct().getAccountid());
@@ -542,17 +496,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return true;
@@ -574,26 +523,17 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
 
     public boolean update_customer(Customer c) {
-        // TODO: change where pin is verified
-        if (!verifyPin(c.getPin())) {
-            return false;
-        }
         Connection conn = null;
         PreparedStatement pstmt = null;
         String sql = "UPDATE Customers SET pin = ?, name = ?, address = ? WHERE tax_id = ?";
@@ -612,17 +552,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return true;
@@ -651,17 +586,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return valid_pin;
@@ -683,19 +613,17 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
+        String delete_customers = "DELETE FROM Customers C WHERE C.tax_id NOT IN (" +
+            "SELECT DISTINCT O.ownerid FROM Owners O)";
+        generic_update(delete_customers);
         return true;
     }
 
@@ -715,27 +643,24 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (pstmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return true;
     }
 
     // this method deletes all transactions from the database
-    public void delete_transactions() {
+    public void delete_transactions(Timestamp time) {
         Connection conn = null;
         Statement stmt = null;
-        String sql = "DELETE FROM Transactions T";
+        Timestamp old_time = Timestamp.valueOf(time.toLocalDateTime().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0));
+        String sql = "DELETE FROM Transactions T WHERE datetime < ";
+        sql += "TO_DATE('" + old_time.toString() + "', 'YYYY-MM-DD hh:mm:ss.fffffffff')";
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
@@ -748,17 +673,12 @@ public class DatabaseAccessor {
             e.printStackTrace();
         } finally {
             try {
-                if (stmt != null) {
-                    conn.close();
-                }
-            } catch (SQLException se) {
-            }
-            try {
                 if (conn != null) {
                     conn.close();
+                    Thread.sleep(2000);
                 }
-            } catch (SQLException se) {
-                se.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

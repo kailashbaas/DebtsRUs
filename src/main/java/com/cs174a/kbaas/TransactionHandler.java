@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-// TODO: flat $5 fee on first transaction on a pocket account
 public class TransactionHandler {
 
     private DatabaseAccessor db;
@@ -31,7 +30,9 @@ public class TransactionHandler {
         t.setInitiator(initiator);
         db.insert_transaction(t);
 
+        System.out.println("predeposit");
         acct.deposit(amount);
+        System.out.println("postdeposit");
 
         return db.update_acct(acct);
     }
@@ -76,7 +77,9 @@ public class TransactionHandler {
         t.setMoney(amount);
         t.setType("Withdrawal");
         t.setInitiator(initiator);
+        System.out.println("pre insert transac");
         db.insert_transaction(t);
+        System.out.println("post insert transac");
 
         return db.update_acct(acct);
     }
@@ -388,8 +391,8 @@ public class TransactionHandler {
     private boolean first_transaction(Account acct, Timestamp time) {
         Timestamp start_of_month = Timestamp.valueOf(time.toLocalDateTime().toLocalDate().withDayOfMonth(1).atTime(0, 0));
 
-        String sql = "SELECT COUNT(*) FROM Transactions WHERE source = " + String.valueOf(acct.getAccountid())
+        String sql = "SELECT COUNT(*) AS CC FROM Transactions WHERE source = " + String.valueOf(acct.getAccountid())
                 + " AND datetime >= TO_DATE('" + start_of_month.toString() + "', YYYY-MM-DD hh:mm:ss.fffffffff)";
-        return (db.aggregate_query(sql) == 0);
+        return (db.aggregate_query(sql, "CC") == 0);
     }
 }
