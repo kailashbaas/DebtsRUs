@@ -115,7 +115,7 @@ public class BankTellerGUI {
                 panel1.add(submit_change, c);
 
                 frame1.getContentPane().add(panel1);
-                frame1.setSize(400, 400);
+                frame1.setSize(800, 400);
                 frame1.setVisible(true);
             }
         });

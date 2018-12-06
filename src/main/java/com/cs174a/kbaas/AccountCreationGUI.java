@@ -99,11 +99,12 @@ public class AccountCreationGUI {
                     JOptionPane.showMessageDialog(frame1, "Please fill in all fields");
                     return;
                 }
+                Double deposit_amount = Double.parseDouble(balance.getText());
                 Account acct = Account.instantiateAcct((String) type_choices.getSelectedItem());
                 acct.setAccountid(acct_id);
                 acct.setOpen(true);
                 acct.setBranch(branch_name);
-                acct.setBalance(Double.parseDouble(initial_balance));
+                acct.setBalance(0);
                 acct.setInterest_added(false);
                 acct.setType(((String) type_choices.getSelectedItem()));
                 if (acct.getType().equals("Pocket")) {
@@ -159,10 +160,10 @@ public class AccountCreationGUI {
                 Transaction t = new Transaction();
                 TransactionHandler transactionHandler = new TransactionHandler();
                 if (acct.getType().equals("Pocket")) {
-                    transactionHandler.top_up(acct.getBalance(), acct, depositor, time);
+                    transactionHandler.top_up(deposit_amount, acct, depositor, time);
                 }
                 else {
-                    transactionHandler.deposit(acct.getBalance(), acct, depositor, time);
+                    transactionHandler.deposit(deposit_amount, acct, depositor, time);
                 }
                 System.out.println("2HERE##########HERE##########");
                 frame1.dispose();

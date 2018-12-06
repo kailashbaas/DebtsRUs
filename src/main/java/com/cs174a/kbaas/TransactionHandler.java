@@ -32,6 +32,7 @@ public class TransactionHandler {
 
         System.out.println("predeposit");
         acct.deposit(amount);
+        System.out.println("amount: " + amount);
         System.out.println("postdeposit");
 
         return db.update_acct(acct);

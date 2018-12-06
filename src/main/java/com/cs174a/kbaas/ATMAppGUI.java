@@ -91,7 +91,7 @@ public class ATMAppGUI {
         JLabel label = new JLabel("Select an account");
 
         ArrayList<Integer> accountids = new ArrayList<Integer>();
-        String query = "SELECT * FROM Accounts NATURAL JOIN Owners WHERE ownerid = " + String.valueOf(customer.getTaxId());
+        String query = "SELECT * FROM Accounts A NATURAL JOIN Owners O WHERE O.ownerid = " + String.valueOf(customer.getTaxId());
         final HashMap<Integer, Account> accounts = db.query_acct(query);
 
         Iterator it = accounts.entrySet().iterator();
@@ -119,7 +119,15 @@ public class ATMAppGUI {
         JButton change_pin = new JButton("Change PIN");
         change_pin.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
+                frame.dispose();
                 ATMAppGUI.this.run_change_pin();
+            }
+        });
+
+        JButton return_to_login = new JButton("Return to login");
+        return_to_login.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+                ATMAppGUI.this.run_login();
             }
         });
 
@@ -135,8 +143,13 @@ public class ATMAppGUI {
         constraints.gridy = 2;
         panel.add(button, constraints);
 
+        JPanel button_panel = new JPanel();
+        button_panel.setLayout(new FlowLayout());
+        button_panel.add(change_pin);
+        button_panel.add(return_to_login);
+
         frame.getContentPane().add(panel, BorderLayout.CENTER);
-        frame.getContentPane().add(change_pin, BorderLayout.SOUTH);
+        frame.getContentPane().add(button_panel, BorderLayout.SOUTH);
         frame.validate();
     }
 
