@@ -108,7 +108,7 @@ public class AccountCreationGUI {
                 acct.setInterest_added(false);
                 acct.setType(((String) type_choices.getSelectedItem()));
                 if (acct.getType().equals("Pocket")) {
-                    String sql = "SELECT * FROM Account WHERE accountid = " + linked_acct_id;
+                    String sql = "SELECT * FROM Accounts WHERE accountid = " + linked_acct_id;
                     linked = db.query_acct(sql).get(Integer.parseInt(linked_acct_id));
                 }
                 acct.setLinked_acct(linked);

@@ -35,10 +35,12 @@ public abstract class Account {
         Account a = null;
         if (type.contains("Checking")) {
             a = new CheckingAccount(type);
-        } else if (type.equals("Savings")) {
+        } else if (type.contains("Savings")) {
             a = new SavingsAccount();
-        } else if (type.equals("Pocket")) {
+        } else if (type.contains("Pocket")) {
             a = new PocketAccount();
+        } else if (type.contains("ATM")) {
+            a = Account.instantiateATMAcct();
         }
         return a;
     }

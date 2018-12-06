@@ -17,7 +17,7 @@ public class TransactionHandler {
     }
 
     public boolean deposit(double amount, Account acct, Customer initiator, Timestamp time) {
-        if (amount <= 0 || !acct.isOpen() || acct.getType().equals("Pocket")) {
+        if (amount <= 0 || !acct.isOpen() || acct.getType().contains("Pocket")) {
             return false;
         }
 
@@ -39,11 +39,12 @@ public class TransactionHandler {
     }
 
     public boolean top_up(double amount, Account acct, Customer initiator, Timestamp time) {
-        if (amount <= 0 || !acct.isOpen() || !acct.getType().equals("Pocket") || amount > acct.getLinked_acct().getBalance()) {
+        boolean first_transac = first_transaction(acct, time);
+        if (amount <= 0 || (first_transac && amount <= 5) || !acct.isOpen() || !acct.getType().contains("Pocket") || amount > acct.getLinked_acct().getBalance()) {
             return false;
         }
 
-        if (first_transaction(acct, time)) {
+        if (first_transac) {
             acct.deposit(-5);
         }
 
@@ -63,7 +64,7 @@ public class TransactionHandler {
 
     // amount > 0
     public boolean withdraw(double amount, Account acct, Customer initiator, Timestamp time) {
-        if (amount <= 0 || amount > acct.getBalance() || !acct.isOpen() || acct.getType().equals("Pocket")) {
+        if (amount <= 0 || amount > acct.getBalance() || !acct.isOpen() || acct.getType().contains("Pocket")) {
             return false;
         }
         acct.deposit(-1 * amount);
@@ -86,11 +87,12 @@ public class TransactionHandler {
     }
 
     public boolean purchase(double amount, Account acct, Customer initiator, Timestamp time) {
-        if (amount <= 0 || amount > acct.getBalance() || !acct.isOpen() || !acct.getType().equals("Pocket")) {
+        boolean first_transac = first_transaction(acct, time);
+        if (amount <= 0 || (first_transac && amount <= 5) ||  amount > acct.getBalance() || !acct.isOpen() || !acct.getType().contains("Pocket")) {
             return false;
         }
 
-        if (first_transaction(acct, time)) {
+        if (first_transac) {
             acct.deposit(-5);
         }
 
@@ -113,7 +115,7 @@ public class TransactionHandler {
 
     public boolean transfer(double amount, Account src, Account dest, Customer initiator, Timestamp time) {
         if (amount > 2000 || amount <= 0 || amount > src.getBalance()
-                || src.getType().equals("Pocket") || dest.getType().equals("Pocket")) {
+                || src.getType().contains("Pocket") || dest.getType().equals("Pocket")) {
             return false;
         }
 
@@ -121,19 +123,20 @@ public class TransactionHandler {
         boolean src_owner = false, dest_owner = false;
 
         if (!commonOwners) {
-            String customr_src_id = String.valueOf(initiator.getTaxId());
+            String customer_src_id = String.valueOf(initiator.getTaxId());
             String src_id = String.valueOf(src.getAccountid());
             String dest_id = String.valueOf(dest.getAccountid());
-            String query = "SELECT * FROM Owners WHERE ownerid = " + src_id;
+            String query = "SELECT * FROM Owners WHERE ownerid = " + customer_src_id;
             ArrayList<String> src_owners = db.query_owners(query);
 
             for (int i = 0; i < src_owners.size(); i++) {
-                if (src_id.equals(src_owners.get(i).substring(0, src_owners.indexOf("|")))) {
+                String owner_tuple = src_owners.get(i);
+                if (src_id.equals(owner_tuple.substring(0, owner_tuple.indexOf("|")))) {
                     if (!src_owner) {
                         src_owner = true;
                     }
                 }
-                else if (dest_id.equals(src_owners.get(i).substring(0, src_owners.indexOf("|")))) {
+                else if (dest_id.equals(owner_tuple.substring(0, owner_tuple.indexOf("|")))) {
                     if (!dest_owner) {
                         dest_owner = true;
                     }
@@ -166,11 +169,12 @@ public class TransactionHandler {
     }
 
     public boolean collect(double amount, Account acct, Customer initiator, Timestamp time) {
-        if (amount <= 0 || amount > acct.getBalance() || !acct.getType().equals("Pocket")) {
+        boolean first_transac = first_transaction(acct, time);
+        if (amount <= 0 || (first_transac && amount <= 5) || amount > acct.getBalance() || !acct.getType().contains("Pocket")) {
             return false;
         }
 
-        if (first_transaction(acct, time)) {
+        if (first_transac) {
             acct.deposit(-5);
         }
 
@@ -192,12 +196,13 @@ public class TransactionHandler {
     }
 
     public boolean pay_friend(double amount, Account src, Account dest, Customer initiator, Timestamp time) {
-        if (amount <= 0 || amount > src.getBalance() || !src.getType().equals("Pocket")
-                || !dest.getType().equals("Pocket")) {
+        boolean first_transac = first_transaction(src, time);
+        if (amount <= 0 || (first_transac && amount <= 5) || amount > src.getBalance() || !src.getType().contains("Pocket")
+                || !dest.getType().contains("Pocket")) {
             return false;
         }
 
-        if (first_transaction(src, time)) {
+        if (first_transac) {
             src.deposit(-5);
         }
 
@@ -220,8 +225,8 @@ public class TransactionHandler {
     }
 
     public boolean wire(double amount, Account src, Account dest, Customer initiator, Timestamp time) {
-        if (amount > 2000 || amount <= 0 || amount > src.getBalance()
-                || src.getType().equals("Pocket") || dest.getType().equals("Pocket")) {
+        if (amount <= 0 || amount > src.getBalance()
+                || src.getType().contains("Pocket") || dest.getType().equals("Pocket")) {
             return false;
         }
 
@@ -232,7 +237,8 @@ public class TransactionHandler {
         ArrayList<String> src_owners = db.query_owners(query);
 
         for (int i = 0; i < src_owners.size(); i++) {
-            if (String.valueOf(initiator.getTaxId()).equals(src_owners.get(i).substring(src_owners.indexOf("|") + 1))) {
+            String owner_tuple = src_owners.get(i);
+            if (String.valueOf(initiator.getTaxId()).equals(owner_tuple.substring(owner_tuple.indexOf("|") + 1))) {
                 valid_owner = true;
                 break;
             }
@@ -240,7 +246,7 @@ public class TransactionHandler {
 
         if (valid_owner) {
             src.deposit(-1 * amount);
-            dest.deposit(amount);
+            dest.deposit(amount * 0.98);
             if (src.getBalance() <= 0.01) {
                 src.setOpen(false);
             }
@@ -292,8 +298,8 @@ public class TransactionHandler {
         Timestamp last_month = new Timestamp(time.getTime() - (30 * 24 * 60 * 60 * 1000));
         String acctid = String.valueOf(acct.getAccountid());
 
-        String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_DATE('" + last_month.toString()
-                + "', YYYY-MM-DD hh:mm:ss.fffffffff) AND (source = " + acctid + "OR destination = " + acctid + ")"
+        String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_TIMESTAMP('" + last_month.toString()
+                + "', YYYY-MM-DD HH24:MI:SS.FF9) AND (source = " + acctid + "OR destination = " + acctid + ")"
                 + " ORDER BY datetime ASC";
         String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid + " ORDER BY datetime ASC";
 
@@ -391,9 +397,11 @@ public class TransactionHandler {
 
     private boolean first_transaction(Account acct, Timestamp time) {
         Timestamp start_of_month = Timestamp.valueOf(time.toLocalDateTime().toLocalDate().withDayOfMonth(1).atTime(0, 0));
+        System.out.println("start of month " + start_of_month.toString());
 
         String sql = "SELECT COUNT(*) AS CC FROM Transactions WHERE source = " + String.valueOf(acct.getAccountid())
-                + " AND datetime >= TO_DATE('" + start_of_month.toString() + "', YYYY-MM-DD hh:mm:ss.fffffffff)";
+                + " OR (destination = " + String.valueOf(acct.getAccountid()) + " AND type = 'Top-Up')"
+                + " AND datetime >= TO_TIMESTAMP('" + start_of_month.toString() + "', 'YYYY-MM-DD HH24:MI:SS.FF9')";
         return (db.aggregate_query(sql, "CC") == 0);
     }
 }

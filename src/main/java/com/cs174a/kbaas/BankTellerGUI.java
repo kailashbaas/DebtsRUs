@@ -238,8 +238,8 @@ public class BankTellerGUI {
                             Timestamp last_month = new Timestamp(time.getCurrent_time().getTime() - (30 * 24 * 60 * 60 * 1000));
 
                             String owners_sql = "SELECT * FROM Customers C JOIN Owners O ON C.tax_id = O.ownerid";
-                            String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_DATE('" + last_month.toString()
-                                    + "', 'YYYY-MM-DD hh:mm:ss.fffffffff') AND (source = " + acctid + "OR destination = " + acctid + ")";
+                            String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_TIMESTAMP('" + last_month.toString()
+                                    + "', 'YYYY-MM-DD HH24:MI:SS.FF9') AND (source = " + acctid + "OR destination = " + acctid + ")";
                             String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid;
 
                             HashMap<Integer, Customer> owners = db.query_customer(owners_sql, "tax_id");

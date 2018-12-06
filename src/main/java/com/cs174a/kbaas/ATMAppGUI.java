@@ -91,7 +91,7 @@ public class ATMAppGUI {
         JLabel label = new JLabel("Select an account");
 
         ArrayList<Integer> accountids = new ArrayList<Integer>();
-        String query = "SELECT * FROM Accounts A NATURAL JOIN Owners O WHERE O.ownerid = " + String.valueOf(customer.getTaxId());
+        String query = "SELECT * FROM Accounts A NATURAL JOIN Owners O WHERE ownerid = " + String.valueOf(customer.getTaxId());
         final HashMap<Integer, Account> accounts = db.query_acct(query);
 
         Iterator it = accounts.entrySet().iterator();
@@ -108,7 +108,7 @@ public class ATMAppGUI {
             public void actionPerformed(ActionEvent actionEvent) {
                 Integer accountid = (Integer) accountid_list.getSelectedItem();
                 ATMAppGUI.this.acct = accounts.get(accountid);
-                if (ATMAppGUI.this.acct.getType().equals("Pocket")) {
+                if (ATMAppGUI.this.acct.getType().contains("Pocket")) {
                     ATMAppGUI.this.run_pocket_app();
                 } else {
                     ATMAppGUI.this.run_main_app();
@@ -160,7 +160,6 @@ public class ATMAppGUI {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        // TODO: in button handlers, check that account is open
         TransactionButtonListener listener = new TransactionButtonListener();
         String greeting = "Welcome, " + customer.getName();
         JLabel greeting_label = new JLabel(greeting);
@@ -206,6 +205,10 @@ public class ATMAppGUI {
 
         String greeting = "Welcome, " + customer.getName();
         JLabel greeting_label = new JLabel(greeting);
+        String acct_msg = "Account " + String.valueOf(acct.getAccountid());
+        JLabel acct_label = new JLabel(acct_msg);
+        String balance = "Balance: " + String.valueOf(acct.getBalance());
+        JLabel balance_label = new JLabel(balance);
 
         TransactionButtonListener listener = new TransactionButtonListener();
         JButton top_up = new JButton("Top-Up");
@@ -225,6 +228,8 @@ public class ATMAppGUI {
         });
 
         panel.add(greeting_label);
+        panel.add(acct_label);
+        panel.add(balance_label);
         panel.add(top_up);
         panel.add(purchase);
         panel.add(collect);
@@ -282,10 +287,8 @@ public class ATMAppGUI {
         c.gridy = 2;
         panel.add(submit_button, c);
 
-        c.gridx = 2;
-        panel.add(back_button, c);
-
         frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -334,10 +337,8 @@ public class ATMAppGUI {
         c.gridy = 2;
         panel.add(submit_button, c);
 
-        c.gridx = 2;
-        panel.add(back_button, c);
-
-        frame.getContentPane().add(panel);
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -355,7 +356,6 @@ public class ATMAppGUI {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 if (!ATMAppGUI.this.acct.isOpen() || !validate_amount(amount.getText())) {
-                    System.out.println("if condition triggered");
                     return;
                 }
                 double withdrawal_amount = Double.parseDouble(amount.getText());
@@ -388,10 +388,8 @@ public class ATMAppGUI {
         c.gridy = 2;
         panel.add(submit_button, c);
 
-        c.gridx = 2;
-        panel.add(back_button, c);
-
-        frame.getContentPane().add(panel);
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -440,10 +438,8 @@ public class ATMAppGUI {
         c.gridy = 2;
         panel.add(submit_button, c);
 
-        c.gridx = 2;
-        panel.add(back_button, c);
-
-        frame.getContentPane().add(panel);
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -501,9 +497,10 @@ public class ATMAppGUI {
         panel.add(dest_account, c);
 
         c.gridy = 2;
-        panel.add(back_button, c);
+        panel.add(submit_button, c);
 
-        frame.getContentPane().add(panel);
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -552,10 +549,8 @@ public class ATMAppGUI {
         c.gridy = 2;
         panel.add(submit_button, c);
 
-        c.gridx = 2;
-        panel.add(back_button, c);
-
-        frame.getContentPane().add(panel);
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -613,9 +608,10 @@ public class ATMAppGUI {
         panel.add(dest_account, c);
 
         c.gridy = 2;
-        panel.add(back_button, c);
+        panel.add(submit_button, c);
 
         frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 
@@ -673,9 +669,10 @@ public class ATMAppGUI {
         panel.add(dest_account, c);
 
         c.gridy = 2;
-        panel.add(back_button, c);
+        panel.add(submit_button, c);
 
         frame.getContentPane().add(panel, BorderLayout.CENTER);
+        frame.getContentPane().add(back_button, BorderLayout.SOUTH);
         frame.validate();
     }
 

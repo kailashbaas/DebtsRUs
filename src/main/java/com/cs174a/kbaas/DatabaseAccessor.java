@@ -10,8 +10,6 @@ public class DatabaseAccessor {
     private static final String USERNAME = "kailashbaas";
     private static final String PASSWORD = "6551261";
 
-    // Account.linked_account and Account.primary_owner will be null for all
-    // accounts, will require additional processing to set these fields
     public HashMap<Integer, Account> query_acct(String query) {
         Connection conn = null;
         Statement stmt = null;
@@ -27,14 +25,13 @@ public class DatabaseAccessor {
             while (rs.next()) {
                 Account acct = Account.instantiateAcct(rs.getString("type"));
                 acct.setAccountid(rs.getInt("accountid"));
-                System.out.println("rs.getString(open)" + rs.getString("open"));
                 acct.setOpen(rs.getString("open").equals("Y"));
                 acct.setBranch(rs.getString("branch"));
                 acct.setInterest_rate(rs.getDouble("interest_rate"));
                 acct.setInterest_added(rs.getString("interest_added").equals("Y"));
                 acct.setBalance(rs.getDouble("balance"));
                 acct.setType(rs.getString("type"));
-                if (acct.getType().equals("Pocket")) {
+                if (acct.getType().contains("Pocket")) {
                     String sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(rs.getInt("linked_account"));
                     acct.setLinked_acct(this.query_acct(sql).get(rs.getInt("linked_account")));
                 }
@@ -50,7 +47,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -93,7 +90,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -136,7 +133,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -179,7 +176,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -196,7 +193,7 @@ public class DatabaseAccessor {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
-        ArrayList<String> owners = null;
+        ArrayList<String> owners = new ArrayList<>();
 
         try {
             Class.forName(JDBC_DRIVER);
@@ -219,7 +216,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -252,7 +249,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -279,7 +276,7 @@ public class DatabaseAccessor {
     private void insert_acct(Account acct) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String sql = "INSERT INTO Accounts (accountid, open, branch, interest_rate, interest_added, " 
+        String sql = "INSERT INTO Accounts(accountid, open, branch, interest_rate, interest_added, " 
             + "balance, type, primary_owner, linked_account) " +
                 "VALUES(?,?,?,?,?,?,?,?,?)";
 
@@ -303,10 +300,11 @@ public class DatabaseAccessor {
             pstmt.setObject(6, acct.getBalance());
             pstmt.setObject(7, acct.getType());
             pstmt.setObject(8, acct.getPrimary_owner().getTaxId());
-            if (acct.linked_acct == null) {
-                pstmt.setObject(9, null);
-            } else {
+            if (acct.getLinked_acct() != null) {
                 pstmt.setObject(9, acct.getLinked_acct().getAccountid());
+                System.out.println("set linked acct" + acct.getLinked_acct().getAccountid());
+            } else {
+                pstmt.setObject(9, null);
             }
             System.out.println("preupdate");
             pstmt.executeUpdate();
@@ -319,7 +317,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -327,8 +325,6 @@ public class DatabaseAccessor {
         }
     }
 
-    // This method inserts into both Customers and Owners, as each customer needs to own an account
-    // to be in the database
     private void insert_customer(Customer c) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -351,7 +347,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -379,7 +375,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -413,7 +409,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -446,7 +442,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -484,11 +480,13 @@ public class DatabaseAccessor {
             System.out.println("in update_acct: " + (acct.getPrimary_owner() == null));
             pstmt.setObject(6, acct.getPrimary_owner().getTaxId());
             if (acct.getLinked_acct() != null) {
+                System.out.println("set linked acct");
                 pstmt.setObject(7, acct.getLinked_acct().getAccountid());
             } else {
                 pstmt.setObject(7, null);
             }
             pstmt.setObject(8, acct.getAccountid());
+            System.out.println("acct balance in dbaccessor " + acct.getBalance());
             pstmt.executeUpdate();
         } catch (SQLException se) {
             se.printStackTrace();
@@ -498,7 +496,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -525,7 +523,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -554,7 +552,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -588,7 +586,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -615,7 +613,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -645,7 +643,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -660,7 +658,7 @@ public class DatabaseAccessor {
         Statement stmt = null;
         Timestamp old_time = Timestamp.valueOf(time.toLocalDateTime().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0));
         String sql = "DELETE FROM Transactions T WHERE datetime < ";
-        sql += "TO_DATE('" + old_time.toString() + "', 'YYYY-MM-DD hh:mm:ss.fffffffff')";
+        sql += "TO_TIMESTAMP('" + old_time.toString() + "', 'YYYY-MM-DD HH24:MI:SS.FF9')";
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
@@ -675,7 +673,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(2000);
+                    Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
