@@ -30,10 +30,7 @@ public class TransactionHandler {
         t.setInitiator(initiator);
         db.insert_transaction(t);
 
-        System.out.println("predeposit");
         acct.deposit(amount);
-        System.out.println("amount: " + amount);
-        System.out.println("postdeposit");
 
         return db.update_acct(acct);
     }
@@ -68,7 +65,7 @@ public class TransactionHandler {
             return false;
         }
         acct.deposit(-1 * amount);
-        if (acct.getBalance() <= 0.01) {
+        if (acct.getBalance() < 0.02) {
             acct.setOpen(false);
         }
 
@@ -79,9 +76,7 @@ public class TransactionHandler {
         t.setMoney(amount);
         t.setType("Withdrawal");
         t.setInitiator(initiator);
-        System.out.println("pre insert transac");
         db.insert_transaction(t);
-        System.out.println("post insert transac");
 
         return db.update_acct(acct);
     }
@@ -97,7 +92,7 @@ public class TransactionHandler {
         }
 
         acct.deposit(-1 * amount);
-        if (acct.getBalance() <= 0.01) {
+        if (acct.getBalance() < 0.02) {
             acct.setOpen(false);
         }
 
@@ -151,7 +146,7 @@ public class TransactionHandler {
         if (commonOwners) {
             src.deposit(-1 * amount);
             dest.deposit(amount);
-            if (src.getBalance() <= 0.01) {
+            if (src.getBalance() < 0.02) {
                 src.setOpen(false);
             }
             Transaction t = new Transaction();
@@ -180,7 +175,7 @@ public class TransactionHandler {
 
         acct.deposit(-1 * amount);
         acct.getLinked_acct().deposit(amount * 0.97);
-        if (acct.getBalance() <= 0.01) {
+        if (acct.getBalance() < 0.02) {
             acct.setOpen(false);
         }
 
@@ -208,7 +203,7 @@ public class TransactionHandler {
 
         src.deposit(-1 * amount);
         dest.deposit(amount);
-        if (src.getBalance() <= 0.01) {
+        if (src.getBalance() < 0.02) {
             src.setOpen(false);
         }
 
@@ -247,7 +242,7 @@ public class TransactionHandler {
         if (valid_owner) {
             src.deposit(-1 * amount);
             dest.deposit(amount * 0.98);
-            if (src.getBalance() <= 0.01) {
+            if (src.getBalance() < 0.02) {
                 src.setOpen(false);
             }
 
@@ -266,40 +261,52 @@ public class TransactionHandler {
         return false;
     }
 
-    public boolean write_check(double amount, Account acct, String memo, Timestamp time) {
+    public boolean write_check(double amount, Account acct, String memo, Timestamp time, Customer initiator) {
         if (amount <= 0 || amount > acct.getBalance() || !acct.getType().contains("Checking")) {
             return false;
         }
 
         acct.deposit(-1 * amount);
-        if (acct.getBalance() <= 0.01) {
+        if (acct.getBalance() < 0.02) {
             acct.setOpen(false);
         }
 
-        String check_num = String.valueOf(acct.getAccountid()).concat(String.valueOf(time));
+        String alphanumeric_datetime = time.toString().replaceAll("[^A-Za-z0-9]", "");
+        String check_num = String.valueOf(acct.getAccountid()).concat(alphanumeric_datetime);
         Check check = new Check();
         check.setSrc(acct);
-        check.setCheck_num(Integer.parseInt(check_num));
+        check.setCheck_num(check_num);
         check.setMoney(amount);
         check.setDatetime(time);
         check.setMemo(memo);
+        check.setInitiator(initiator);
 
-        return db.insert_check(check);
+        return db.insert_check(check) && db.update_acct(acct);
     }
 
     public boolean accrue_interest(Account acct, Timestamp time) {
         double avg_daily_balance = generate_avg_daily_balance(acct, time);
         acct.deposit(avg_daily_balance * acct.getInterest_rate() / 12);
         acct.setInterest_added(true);
+        Transaction t = new Transaction();
+        t.setSrc(external_acct);
+        t.setDest(acct);
+        t.setMoney(avg_daily_balance * acct.getInterest_rate() / 12);
+        t.setDatetime(time);
+        Customer c = new Customer(0, 0, "", "");
+        t.setInitiator(c);
+        t.setType("Accrue-Interest");
+        db.insert_transaction(t);
         return db.update_acct(acct);
     }
 
     private double generate_avg_daily_balance(Account acct, Timestamp time) {
-        Timestamp last_month = new Timestamp(time.getTime() - (30 * 24 * 60 * 60 * 1000));
+        long month_millis = 30L * 24L * 60L * 60L * 1000L;
+        Timestamp last_month = new Timestamp(time.getTime() - month_millis);
         String acctid = String.valueOf(acct.getAccountid());
 
         String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_TIMESTAMP('" + last_month.toString()
-                + "', YYYY-MM-DD HH24:MI:SS.FF9) AND (source = " + acctid + "OR destination = " + acctid + ")"
+                + "', 'YYYY-MM-DD HH24:MI:SS.FF9') AND (source = " + acctid + " OR destination = " + acctid + ")"
                 + " ORDER BY datetime ASC";
         String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid + " ORDER BY datetime ASC";
 
@@ -371,6 +378,9 @@ public class TransactionHandler {
     }
 
     private ArrayList<Map.Entry<Double, LocalDate>> condense_checks_and_transactions(ArrayList<Map.Entry<Double, LocalDate>> list) {
+        if (list.size() == 1) {
+            return list;
+        }
         double total = list.get(0).getKey();
         LocalDate old_date = list.get(0).getValue();
         ArrayList<Map.Entry<Double, LocalDate>> result = new ArrayList<>();
@@ -397,7 +407,6 @@ public class TransactionHandler {
 
     private boolean first_transaction(Account acct, Timestamp time) {
         Timestamp start_of_month = Timestamp.valueOf(time.toLocalDateTime().toLocalDate().withDayOfMonth(1).atTime(0, 0));
-        System.out.println("start of month " + start_of_month.toString());
 
         String sql = "SELECT COUNT(*) AS CC FROM Transactions WHERE source = " + String.valueOf(acct.getAccountid())
                 + " OR (destination = " + String.valueOf(acct.getAccountid()) + " AND type = 'Top-Up')"

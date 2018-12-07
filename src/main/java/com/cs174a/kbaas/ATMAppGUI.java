@@ -20,11 +20,16 @@ public class ATMAppGUI {
 
     public static void main(String[] args) {
         ATMAppGUI gui = new ATMAppGUI();
-        gui.run_login();
+        gui.run_login(true);
     }
 
-    public void run_login() {
-        frame = new JFrame();
+    public void run_login(boolean first_time) {
+        if (first_time) {
+            frame = new JFrame();
+        } else {
+            frame.getContentPane().removeAll();
+            frame.repaint();
+        }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
         time = new CurrentTimeWrapper();
@@ -127,7 +132,7 @@ public class ATMAppGUI {
         JButton return_to_login = new JButton("Return to login");
         return_to_login.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                ATMAppGUI.this.run_login();
+                ATMAppGUI.this.run_login(false);
             }
         });
 
@@ -258,7 +263,6 @@ public class ATMAppGUI {
                     return;
                 }
                 double deposit_amount = Double.parseDouble(amount.getText());
-                System.out.println("deposit amount" + deposit_amount);
                 TransactionHandler t = new TransactionHandler();
                 Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
                 Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
@@ -362,7 +366,6 @@ public class ATMAppGUI {
                 TransactionHandler t = new TransactionHandler();
                 Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
                 Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
-                System.out.println("here");
                 boolean result = t.withdraw(withdrawal_amount, ATMAppGUI.this.acct, ATMAppGUI.this.customer, transac_time);
                 if (!result) {
                     JOptionPane.showMessageDialog(frame, "There was an error processing your withdrawal");
@@ -700,7 +703,6 @@ public class ATMAppGUI {
                         String query = "SELECT * FROM Customers WHERE pin = " + String.valueOf(hashed_pin);
                         Customer c = ATMAppGUI.this.db.query_customer(query, "pin").get(hashed_pin);
                         c.setPin(hashed_new_pin);
-                        System.out.println("new pin" + c.getPin());
                         ATMAppGUI.this.db.update_customer(c);
                         JOptionPane.showMessageDialog(null, "Updated PIN");
                     } else {

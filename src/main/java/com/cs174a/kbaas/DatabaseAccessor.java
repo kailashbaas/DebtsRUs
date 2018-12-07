@@ -47,7 +47,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -56,8 +56,6 @@ public class DatabaseAccessor {
         return accts;
     }
 
-    // Check.src will be null for all checks, will require additional processing to set
-    // tihs field
     public ArrayList<Check> query_check(String query) {
         Connection conn = null;
         Statement stmt = null;
@@ -76,10 +74,13 @@ public class DatabaseAccessor {
                 String src_sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(rs.getInt("source"));
                 HashMap<Integer, Account> src = this.query_acct(src_sql);
                 c.setSrc(src.get(rs.getInt("source")));
-                c.setCheck_num(rs.getInt("check_num"));
+                c.setCheck_num(rs.getString("check_num"));
                 c.setDatetime(rs.getTimestamp("datetime"));
                 c.setMoney(rs.getDouble("money"));
                 c.setMemo(rs.getString("memo"));
+                String initiator_sql = "SELECT * FROM Customers WHERE tax_id = " + String.valueOf(rs.getInt("initiator"));
+                Customer init = this.query_customer(initiator_sql, "tax_id").get(rs.getInt("initiator"));
+                c.setInitiator(init);
                 checks.add(c);
             }
         } catch (SQLException se) {
@@ -90,7 +91,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -133,7 +134,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -146,7 +147,7 @@ public class DatabaseAccessor {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
-        ArrayList<Transaction> transactions = null;
+        ArrayList<Transaction> transactions = new ArrayList<>();
 
         try {
             Class.forName(JDBC_DRIVER);
@@ -157,15 +158,18 @@ public class DatabaseAccessor {
 
             while (rs.next()) {
                 Transaction t = new Transaction();
-                String src_sql = "SELECT * FROM Accounts WHERE accountid = " + rs.getInt("source");
+                String src_sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(rs.getInt("source"));
                 HashMap<Integer, Account> src = this.query_acct(src_sql);
                 t.setSrc(src.get(rs.getInt("source")));
-                String dest_sql = "SELECT * FROM Accounts WHERE accountid = " + rs.getInt("destination");
+                String dest_sql = "SELECT * FROM Accounts WHERE accountid = " + String.valueOf(rs.getInt("destination"));
                 HashMap<Integer, Account> dest = this.query_acct(dest_sql);
-                t.setDest(src.get(rs.getInt("destination")));
+                t.setDest(dest.get(rs.getInt("destination")));
                 t.setDatetime(rs.getTimestamp("datetime"));
                 t.setMoney(rs.getDouble("money"));
                 t.setType(rs.getString("type"));
+                String initiator_sql = "SELECT * FROM Customers WHERE tax_id = " + String.valueOf(rs.getInt("initiator"));
+                Customer c = this.query_customer(initiator_sql, "tax_id").get(rs.getInt("initiator"));
+                t.setInitiator(c);
                 transactions.add(t);
             }
         } catch (SQLException se) {
@@ -176,7 +180,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -216,7 +220,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -249,7 +253,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -260,23 +264,19 @@ public class DatabaseAccessor {
 
     public void insert_new_acct(Account acct, ArrayList<Customer> owners, ArrayList<Customer> new_owners) {
         int accountid = acct.getAccountid();
-        System.out.println("here1");
         for (int i = 0; i < new_owners.size(); i++) {
             insert_customer(new_owners.get(i));
         }
-        System.out.println("here2");
         insert_acct(acct);
-        System.out.println("here3");
         for (int i = 0; i < owners.size(); i++) {
             insert_owner(owners.get(i), accountid);
         }
-        System.out.println("here4");
     }
 
     private void insert_acct(Account acct) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String sql = "INSERT INTO Accounts(accountid, open, branch, interest_rate, interest_added, " 
+        String sql = "INSERT INTO Accounts(accountid, open, branch, interest_rate, interest_added, "
             + "balance, type, primary_owner, linked_account) " +
                 "VALUES(?,?,?,?,?,?,?,?,?)";
 
@@ -302,13 +302,10 @@ public class DatabaseAccessor {
             pstmt.setObject(8, acct.getPrimary_owner().getTaxId());
             if (acct.getLinked_acct() != null) {
                 pstmt.setObject(9, acct.getLinked_acct().getAccountid());
-                System.out.println("set linked acct" + acct.getLinked_acct().getAccountid());
             } else {
                 pstmt.setObject(9, null);
             }
-            System.out.println("preupdate");
             pstmt.executeUpdate();
-            System.out.println("postupdate");
         } catch (SQLException se) {
             se.printStackTrace();
         } catch (Exception e) {
@@ -317,7 +314,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -347,7 +344,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -375,7 +372,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -398,9 +395,7 @@ public class DatabaseAccessor {
             pstmt.setObject(4, t.getType());
             pstmt.setObject(5, t.getMoney());
             pstmt.setObject(6, t.getInitiator().getTaxId());
-            System.out.println("preinsert");
             pstmt.executeUpdate();
-            System.out.println("postinsert");
         } catch (SQLException se) {
             se.printStackTrace();
         } catch (Exception e) {
@@ -409,7 +404,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -420,7 +415,7 @@ public class DatabaseAccessor {
     public boolean insert_check(Check c) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        String sql = "INSERT INTO Checks(source, check_num, datetime, memo, money) VALUES(?,?,?,?,?)";
+        String sql = "INSERT INTO Checks(source, check_num, datetime, memo, money, initiator) VALUES(?,?,?,?,?,?)";
 
         try {
             Class.forName(JDBC_DRIVER);
@@ -431,6 +426,7 @@ public class DatabaseAccessor {
             pstmt.setObject(3, c.getDatetime());
             pstmt.setObject(4, c.getMemo());
             pstmt.setObject(5, c.getMoney());
+            pstmt.setObject(6, c.getInitiator().getTaxId());
             pstmt.executeUpdate();
         } catch (SQLException se) {
             se.printStackTrace();
@@ -442,7 +438,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -477,16 +473,13 @@ public class DatabaseAccessor {
             pstmt.setObject(3, acct.getInterest_rate());
             pstmt.setObject(4, interest_added);
             pstmt.setObject(5, acct.getBalance());
-            System.out.println("in update_acct: " + (acct.getPrimary_owner() == null));
             pstmt.setObject(6, acct.getPrimary_owner().getTaxId());
             if (acct.getLinked_acct() != null) {
-                System.out.println("set linked acct");
                 pstmt.setObject(7, acct.getLinked_acct().getAccountid());
             } else {
                 pstmt.setObject(7, null);
             }
             pstmt.setObject(8, acct.getAccountid());
-            System.out.println("acct balance in dbaccessor " + acct.getBalance());
             pstmt.executeUpdate();
         } catch (SQLException se) {
             se.printStackTrace();
@@ -496,7 +489,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -523,7 +516,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -552,7 +545,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -586,7 +579,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -613,7 +606,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -643,7 +636,7 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -652,7 +645,7 @@ public class DatabaseAccessor {
         return true;
     }
 
-    // this method deletes all transactions from the database
+    // this method deletes all transactions not from the current month from the database
     public void delete_transactions(Timestamp time) {
         Connection conn = null;
         Statement stmt = null;
@@ -673,7 +666,35 @@ public class DatabaseAccessor {
             try {
                 if (conn != null) {
                     conn.close();
-                    Thread.sleep(1500);
+                    //Thread.sleep(1500);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void delete_checks(Timestamp time) {
+        Connection conn = null;
+        Statement stmt = null;
+        Timestamp old_time = Timestamp.valueOf(time.toLocalDateTime().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0));
+        String sql = "DELETE FROM Checks C WHERE datetime < ";
+        sql += "TO_TIMESTAMP('" + old_time.toString() + "', 'YYYY-MM-DD HH24:MI:SS.FF9')";
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            stmt = conn.createStatement();
+
+            stmt.executeUpdate(sql);
+        } catch (SQLException se) {
+            se.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                    //Thread.sleep(1500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

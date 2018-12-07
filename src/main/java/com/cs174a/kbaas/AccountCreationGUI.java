@@ -117,9 +117,7 @@ public class AccountCreationGUI {
                 String[] owners_arr = owners_string.split(",");
                 for (int i = 0; i < owners_arr.length; i++) {
                     String sql = "SELECT COUNT(*) AS CC FROM Customers WHERE tax_id = " + owners_arr[i];
-                    System.out.println("Sql: " + sql);
                     int result = (int) db.aggregate_query(sql, "CC");
-                    System.out.println("############wtf#######" + result);
                     if (result == 0) {
                         String message = "Customer " + owners_arr[i] + " does not exist. You will now be directed to customer creation.";
                         JOptionPane.showMessageDialog(frame1, message);
@@ -140,7 +138,6 @@ public class AccountCreationGUI {
                 if (!owners.getText().equals("")) {
                     other_owners = ", " + owners.getText();
                 }
-                System.out.println("primary" + primary_owner_id);
                 String owners_sql = "SELECT * FROM Customers WHERE tax_id IN (" + primary_owner_id + other_owners + ")";
                 HashMap<Integer, Customer> owners_map = db.query_customer(owners_sql, "tax_id");
                 ArrayList<Customer> owners_list = new ArrayList<>();
@@ -156,7 +153,6 @@ public class AccountCreationGUI {
                 owners_list.addAll(new_owners);
                 db.insert_new_acct(acct, owners_list, new_owners);
                 Customer depositor = new Customer(Integer.parseInt(initial_depositor.getText()),0,"","");
-                System.out.println("1HERE##########HERE##########");
                 Transaction t = new Transaction();
                 TransactionHandler transactionHandler = new TransactionHandler();
                 if (acct.getType().equals("Pocket")) {
@@ -165,19 +161,10 @@ public class AccountCreationGUI {
                 else {
                     transactionHandler.deposit(deposit_amount, acct, depositor, time);
                 }
-                System.out.println("2HERE##########HERE##########");
                 frame1.dispose();
             }
         });
         panel.add(create_acct);
-        /*JButton create_customer = new JButton("Add New Customer"); // return/display tax_id after creation
-        create_customer.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                run_customer_creation();
-            }
-        });*/
-
 
         frame1.getContentPane().add(panel);
         frame1.setSize(400, 400);
@@ -192,7 +179,6 @@ public class AccountCreationGUI {
         String name = info_array[2];
         String address = info_array[3];
         String msg = String.valueOf(tax_id) + " " + String.valueOf(hashed_pin) + " " + name + " " + address;
-        System.out.println("################" + msg);
         new_owners.add(new Customer(tax_id, hashed_pin, name, address));
         /*JFrame frame1 = new JFrame();
         frame1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

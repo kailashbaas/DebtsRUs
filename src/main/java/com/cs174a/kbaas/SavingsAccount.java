@@ -3,7 +3,7 @@ package com.cs174a.kbaas;
 public class SavingsAccount extends Account {
 
     public SavingsAccount() {
-        this.interest_rate = 0;
+        this.interest_rate = 0.075;
     }
 
     public int getAccountid() {

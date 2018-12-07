@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import javax.swing.*;
 
@@ -16,13 +18,18 @@ public class BankTellerGUI {
 
     public static void main(String[] args) {
         BankTellerGUI gui = new BankTellerGUI();
-        gui.run();
+        gui.run(true);
     }
 
-    public void run() {
+    public void run(boolean first_time) {
         time = new CurrentTimeWrapper();
         start = new Timestamp(System.currentTimeMillis());
-        frame = new JFrame();
+        if (first_time) {
+            frame = new JFrame();
+        } else {
+            frame.getContentPane().removeAll();
+            frame.repaint();
+        }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         db = new DatabaseAccessor();
 
@@ -141,7 +148,7 @@ public class BankTellerGUI {
         frame.repaint();
 
         JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         JLabel title = new JLabel("Enter Check Transaction");
 
@@ -153,6 +160,9 @@ public class BankTellerGUI {
 
         JLabel memo_label = new JLabel("Memo: ");
         final JTextField memo_entry = new JTextField(20);
+
+        JLabel initiator_label = new JLabel("Initiator: ");
+        final JTextField initiator_entry = new JTextField(20);
 
         JButton submit = new JButton("Submit");
         submit.addActionListener(new ActionListener() {
@@ -167,37 +177,37 @@ public class BankTellerGUI {
                     TransactionHandler t = new TransactionHandler();
                     Timestamp delta = new Timestamp(System.currentTimeMillis() - start.getTime());
                     Timestamp transac_time = new Timestamp(time.getCurrent_time().getTime() + delta.getTime());
-                    t.write_check(amt, acct, memo_label.getText(), transac_time);
+                    int initiatorid = Integer.parseInt(initiator_entry.getText());
+                    String initiator_sql = "SELECT * FROM Customers WHERE tax_id = " + String.valueOf(initiatorid);
+                    Customer c = db.query_customer(initiator_sql, "tax_id").get(initiatorid);
+                    t.write_check(amt, acct, memo_entry.getText(), transac_time, c);
                 }
                 else {
                     JOptionPane.showMessageDialog(frame, "Invalid accountid or amount");
                 }
-                run();
+                run(false);
             }
         });
 
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = 0;
-        c.anchor = GridBagConstraints.CENTER;
-        panel.add(select_acct_label, c);
+        JPanel acct_panel = new JPanel(new FlowLayout());
+        acct_panel.add(select_acct_label);
+        acct_panel.add(acct_entry);
+        panel.add(acct_panel);
 
-        c.gridx = 1;
-        panel.add(acct_entry, c);
+        JPanel amt_panel = new JPanel(new FlowLayout());
+        amt_panel.add(amt_label);
+        amt_panel.add(amt_entry);
+        panel.add(amt_panel);
 
-        c.gridx = 0;
-        c.gridy = 1;
-        panel.add(amt_label, c);
+        JPanel memo_panel = new JPanel(new FlowLayout());
+        memo_panel.add(memo_label);
+        memo_panel.add(memo_entry);
+        panel.add(memo_panel);
 
-        c.gridx = 1;
-        panel.add(amt_entry, c);
-
-        c.gridx = 0;
-        c.gridy = 2;
-        panel.add(memo_label, c);
-
-        c.gridx = 1;
-        panel.add(memo_entry, c);
+        JPanel init_panel = new JPanel(new FlowLayout());
+        init_panel.add(initiator_label);
+        init_panel.add(initiator_entry);
+        panel.add(init_panel);
 
         frame.getContentPane().add(title, BorderLayout.NORTH);
         frame.getContentPane().add(panel, BorderLayout.CENTER);
@@ -235,11 +245,12 @@ public class BankTellerGUI {
                             String acctid = String.valueOf(acct.getAccountid());
 
                             double transaction_total = 0;
-                            Timestamp last_month = new Timestamp(time.getCurrent_time().getTime() - (30 * 24 * 60 * 60 * 1000));
+                            long month_millis = 30L * 24L * 60L * 60L * 1000L;
+                            Timestamp last_month = new Timestamp(time.getCurrent_time().getTime() - month_millis);
 
-                            String owners_sql = "SELECT * FROM Customers C JOIN Owners O ON C.tax_id = O.ownerid";
+                            String owners_sql = "SELECT * FROM Customers C JOIN Owners O ON C.tax_id = O.ownerid WHERE O.accountid = " + acctid;
                             String transactions_sql = "SELECT * FROM Transactions WHERE datetime >= TO_TIMESTAMP('" + last_month.toString()
-                                    + "', 'YYYY-MM-DD HH24:MI:SS.FF9') AND (source = " + acctid + "OR destination = " + acctid + ")";
+                                    + "', 'YYYY-MM-DD HH24:MI:SS.FF9') AND (source = " + acctid + " OR destination = " + acctid + ")";
                             String checks_sql = "SELECT * FROM Checks WHERE source = " + acctid;
 
                             HashMap<Integer, Customer> owners = db.query_customer(owners_sql, "tax_id");
@@ -268,10 +279,10 @@ public class BankTellerGUI {
                             for (int j = 0; j < transactions.size(); j++) {
                                 Transaction t = transactions.get(j);
                                 if (String.valueOf(t.getSrc().getAccountid()).equals(String.valueOf(acct.getAccountid()))) {
-                                    transaction_total -= t.getMoney();
+                                    transaction_total += t.getMoney();
                                 }
                                 else {
-                                    transaction_total += t.getMoney();
+                                    transaction_total -= t.getMoney();
                                 }
                                 String label_content = "\t\t" + String.valueOf(t.getSrc().getAccountid()) +
                                         "\t\t" + String.valueOf(t.getDest().getAccountid()) +
@@ -284,20 +295,25 @@ public class BankTellerGUI {
 
                             JLabel checks_label = new JLabel("\tChecks");
                             labels.add(checks_label);
-                            JLabel checks_heading = new JLabel("\t\tSource\t\tCheck No.\t\tMoney\t\tMemo\t\tDatetime");
+                            JLabel checks_heading = new JLabel("\t\tSource\t\tCheck No.\t\tMoney\t\tMemo\t\tDatetime\t\tInitiator");
                             labels.add(checks_heading);
                             for (int j = 0; j < checks.size(); j++) {
                                 Check c = checks.get(j);
-                                transaction_total -= c.getMoney();
+                                transaction_total += c.getMoney();
                                 String label_content = "\t\t" + String.valueOf(c.getSrc().getAccountid()) +
-                                        "\t\t" + String.valueOf(c.getCheck_num()) +
+                                        "\t\t" + c.getCheck_num() +
                                         "\t\t" + String.valueOf(c.getMoney()) +
                                         "\t\t" + c.getMemo() +
-                                        "\t\t" + c.getDatetime().toString();
+                                        "\t\t" + c.getDatetime().toString() +
+                                        "\t\t" + c.getInitiator().getName();
                                 labels.add(new JLabel(label_content));
                             }
 
-                            JLabel initial_balance_label = new JLabel("Initial Balance: " + String.valueOf(acct.getBalance() + transaction_total));
+                            double initial_balance = acct.getBalance() + transaction_total;
+                            if (initial_balance < 0) {
+                                initial_balance = 0;
+                            }
+                            JLabel initial_balance_label = new JLabel("Initial Balance: " + String.valueOf(initial_balance));
                             labels.add(initial_balance_label);
                             JLabel final_balance = new JLabel("Final Balance: " + String.valueOf(acct.getBalance()));
                             labels.add(final_balance);
@@ -315,7 +331,7 @@ public class BankTellerGUI {
                 else {
                     JOptionPane.showMessageDialog(frame, "Invalid tax_id");
                 }
-                run();
+                run(false);
             }
         });
 
@@ -341,7 +357,7 @@ public class BankTellerGUI {
     }
 
     private void run_closed_accts_screen() {
-        String sql = "SELECT * FROM Accounts WHERE open = false";
+        String sql = "SELECT * FROM Accounts WHERE open = 'N'";
         HashMap<Integer, Account> closed_accts = db.query_acct(sql);
 
         ArrayList<JLabel> acct_labels = new ArrayList<>();
@@ -357,8 +373,13 @@ public class BankTellerGUI {
     }
 
     private void run_dter_screen() {
-        String sql = "SELECT * FROM (Customers C JOIN Accounts A ON C.tax_id = A.primary_owner) JOIN Transactions T ON T.dest = A.accountid"
-                + "GROUP BY C.tax_id "
+        Timestamp timestamp = time.getCurrent_time();
+        Timestamp start_of_month = Timestamp.valueOf(timestamp.toLocalDateTime().toLocalDate().withDayOfMonth(1).atTime(0, 0));
+        String sql = "SELECT C.tax_id, C.pin, C.name, C.address "
+                + "FROM (Customers C JOIN Accounts A ON C.tax_id = A.primary_owner) "
+                + "JOIN Transactions T ON T.destination = A.accountid "
+                + "WHERE datetime >= TO_TIMESTAMP('" + start_of_month.toString() + "', 'YYYY-MM-DD HH24:MI:SS.FF9') "
+                + "GROUP BY C.tax_id, C.pin, C.name, C.address "
                 + "HAVING SUM(T.money) > 10000";
         HashMap<Integer, Customer> dter_customers = db.query_customer(sql, "tax_id");
         ArrayList<JLabel> labels = new ArrayList<>();
@@ -407,7 +428,7 @@ public class BankTellerGUI {
                 else {
                     JOptionPane.showMessageDialog(frame, "Invalid tax_id");
                 }
-                BankTellerGUI.this.run();
+                BankTellerGUI.this.run(false);
             }
         });
 
@@ -433,7 +454,7 @@ public class BankTellerGUI {
     }
 
     private void run_add_interest_screen() {
-        String sql = "SELECT * FROM Accounts WHERE open = true AND interest_added = false";
+        String sql = "SELECT * FROM Accounts WHERE open = 'Y' AND interest_added = 'N'";
         HashMap<Integer, Account> valid_accts = db.query_acct(sql);
         if (valid_accts.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "No available accounts to add interest to");
@@ -479,6 +500,7 @@ public class BankTellerGUI {
 
     private void run_delete_transactions_screen() {
         db.delete_transactions(time.getCurrent_time());
+        db.delete_checks(time.getCurrent_time());
         JOptionPane.showMessageDialog(frame, "Deleted all transactions from the database");
     }
 
@@ -501,15 +523,16 @@ public class BankTellerGUI {
             public void actionPerformed(ActionEvent actionEvent) {
                 String type = acct_type_selection.getSelectedItem().toString();
                 String interest_rate = interest_rate_entry.getText();
-                if (interest_rate.matches("[0-9]+(.[0-9]+)?")) {
+                if (interest_rate.matches("([0-9]+)?(.[0-9]+)?")) {
                     String sql = "UPDATE Accounts SET interest_rate = " + interest_rate
-                            + " WHERE type = " + type;
+                            + " WHERE type = '" + type + "'";
                     db.generic_update(sql);
                     JOptionPane.showMessageDialog(frame1, "Successfully updated interest rate");
                 }
                 else {
                     JOptionPane.showMessageDialog(frame1, "Invalid interest rate");
                 }
+                frame1.dispose();
             }
         });
 
@@ -599,21 +622,34 @@ public class BankTellerGUI {
     }
 
     private void display_labels(ArrayList<JLabel> labels, String heading) {
-        JFrame label_frame = new JFrame();
+        final JFrame label_frame = new JFrame();
         label_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel label_panel = new JPanel();
         label_panel.setLayout(new BoxLayout(label_panel, BoxLayout.Y_AXIS));
 
+        JScrollPane scrollable_display = new JScrollPane(label_panel);
+
+        heading = heading.replaceAll("\t", "    ");
         JLabel heading_label = new JLabel(heading);
         label_panel.add(heading_label);
 
         for (int i = 0; i < labels.size(); i++) {
+            String text = labels.get(i).getText();
+            labels.get(i).setText(text.replaceAll("\t", "    "));
             label_panel.add(labels.get(i));
         }
 
-        label_frame.getContentPane().add(label_panel);
-        label_frame.setSize(400, 400);
+        JButton close_button = new JButton("Close");
+        close_button.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+                label_frame.dispose();
+            }
+        });
+
+        label_frame.getContentPane().add(scrollable_display, BorderLayout.CENTER);
+        label_frame.getContentPane().add(close_button, BorderLayout.SOUTH);
+        label_frame.setSize(600, 400);
         label_frame.setVisible(true);
     }
 }
